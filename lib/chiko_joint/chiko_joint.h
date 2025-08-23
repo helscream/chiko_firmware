@@ -92,7 +92,7 @@ enum SelectedJoint {
 
 class Joint{
     private:
-        ESP32Servo JointServo;  // create servo object to control a servo
+        Servo JointServo;  // create servo object to control a servo
         TaskHandle_t JointSweepTaskHandle = NULL;
     public:
         float JointOffset = 0;   // Measured offset of the joint

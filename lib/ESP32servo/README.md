@@ -1,113 +1,94 @@
-# ESP32Servo
+# Servo Library for ESP32
 
-A lightweight C++ library to control servo motors with PWM using ESP32's built-in `ledc` module.  
-This library allows you to control multiple servo motors with customizable resolution and frequency.
+Specifically for the V3.0.0 of Arduino ESP32. All ADC's have been updated to work correctly with the new release
 
-## 📦 Features
+https://github.com/espressif/arduino-esp32/releases
 
-- Supports multiple servos (each on its own PWM channel)
-- Customizable PWM frequency (default: 50 Hz)
-- Customizable resolution (default: 12 bits)
-- Control via microseconds (`writeMicroseconds(1500)`) or angle (`write(90)`)
+This library attempts to faithfully replicate the semantics of the
+Arduino Servo library (see http://www.arduino.cc/en/Reference/Servo)
+for the ESP32, with two (optional) additions. The two new functions
+expose the ability of the ESP32 PWM timers to vary timer width.
+# Documentation by Doxygen
 
-## 📁 Project Structure
+[ESP32Servo Doxygen](https://madhephaestus.github.io/ESP32Servo/annotated.html)
 
-```text
-ESP32Servo/
-├── src/
-│   ├── ESP32Servo.h
-│   └── ESP32Servo.cpp
-├── examples/
-│   └── sweep/
-│       └── sweep.ino
-├── README.md
-├── library.properties
+## License
+
+Copyright (c) 2017 John K. Bennett.  All right reserved.
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+## Library Description:
+```
+    Servo - Class for manipulating servo motors connected to ESP32 pins.
+    
+    int attach(pin )  - Attaches the given GPIO pin to the next free channel
+        (channels that have previously been detached are used first), 
+        returns channel number or 0 if failure. All pin numbers are allowed,
+        but only pins 2,4,12-19,21-23,25-27,32-33 are recommended.
+    
+    int attach(pin, min, max  ) - Attaches to a pin setting min and max 
+        values in microseconds; enforced minimum min is 500, enforced max
+        is 2500. Other semantics are the same as attach().
+    
+    void write () - Sets the servo angle in degrees; a value below 500 is
+        treated as a value in degrees (0 to 180). These limit are enforced,
+        i.e., values are constrained as follows:
+            Value                                   Becomes
+            -----                                   -------
+            < 0                                        0
+            0 - 180                                  value (treated as degrees)
+            181 - 499                                 180
+            500 - (min-1)                             min
+            min-max (from attach or default)         value (treated as microseconds)
+            (max+1) - 2500                            max
+    
+    void writeMicroseconds() - Sets the servo pulse width in microseconds.
+        min and max are enforced (see above). 
+        
+    int read() - Gets the last written servo pulse width as an angle between 0 and 180. 
+    
+    int readMicroseconds()   - Gets the last written servo pulse width in microseconds.
+    
+    bool attached() - Returns true if this servo instance is attached to a pin.
+    
+    void detach() - Stops an the attached servo, frees the attached pin, and frees
+        its channel for reuse.  
 ```
 
-## 🚀 Installation
-
-Copy the `ESP32Servo` folder into your Arduino `libraries` directory or install it as a PlatformIO library.
-
-## 🧰 Usage
-
-### Include the library
-
-```cpp
-#include <ESP32Servo.h>
+### **New ESP32-specific functions**
+ 
 ```
+    setTimerWidth(value) - Sets the PWM timer width (must be 16-20) (ESP32 ONLY);
+        as a side effect, the pulse width is recomputed.
 
-### Example: Controlling a single servo
-
-```cpp
-#include <ESP32Servo.h>
-
-ESP32Servo myServo;
-
-void setup() {
-  Serial.begin(115200);
-  ESP32Servo::setFrequency(50);     // Set frequency to 50Hz (typical for servos)
-  ESP32Servo::setResolution(12);    // Set resolution to 12 bits
-
-  myServo.attach(13, 0);            // Attach servo to pin 13, channel 0
-  myServo.writeMicroseconds(1500);  // Center the servo
-}
-
-void loop() {
-  myServo.writeMicroseconds(1000);  // Move to one end
-  delay(1000);
-  myServo.writeMicroseconds(2000);  // Move to the other end
-  delay(1000);
-}
+    int readTimerWidth() - Gets the PWM timer width (ESP32 ONLY) 
 ```
+ 
+### Useful Defaults:
 
-### Example: Sweep (see `examples/sweep/sweep.ino`)
+default min pulse width for attach(): 544us
 
-```cpp
-#include <ESP32Servo.h>
+default max pulse width for attach(): 2400us
 
-ESP32Servo servo;
+default timer width 16 (if timer width is not set)
 
-void setup() {
-  Serial.begin(115200);
-  servo.attach(13, 0);
-  servo.setFrequency(50);
-  servo.setResolution(12);
-  servo.write(0);
-  delay(1000);
-}
+default pulse width 1500us (servos are initialized with this value)
 
-void loop() {
-  for (int angle = 0; angle <= 180; angle += 10) {
-    servo.write(angle);
-    delay(500);
-  }
-  for (int angle = 180; angle >= 0; angle -= 10) {
-    servo.write(angle);
-    delay(500);
-  }
-}
-```
+MINIMUM pulse with: 500us
 
-### Controlling Multiple Servos
+MAXIMUM pulse with: 2500us
 
-Just create multiple instances of `ESP32Servo`, each with its own pin and channel.
-
-## 🛠️ API Reference
-
-| Method                  | Description                                       |
-| ----------------------- | ------------------------------------------------- |
-| `attach(pin, channel)`  | Attach servo to GPIO pin and PWM channel          |
-| `write(angle)`          | Set servo position by angle (0–180°)              |
-| `writeMicroseconds(us)` | Send pulse width in microseconds (e.g. 500–2500)  |
-| `setFrequency(freqHz)`  | Set global PWM frequency                          |
-| `setResolution(bits)`   | Set global PWM resolution in bits (e.g. 8–16)     |
-| `getAngle()`            | Get last written angle                            |
-
-## 🧪 Tested On
-
-- ESP32 DEVKIT DOIT V1
-- Arduino IDE & PlatformIO
-
-## 📜 License
-
-MIT License
+MAXIMUM number of servos: 16 (this is the number of PWM channels in the ESP32)  

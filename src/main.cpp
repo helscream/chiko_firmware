@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #include <chiko_joint.h>
+#include <chiko_BMA250.h>
+
 
 
 void setup() {
