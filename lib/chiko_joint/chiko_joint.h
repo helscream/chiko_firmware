@@ -90,93 +90,178 @@ enum SelectedJoint {
 #define RL_OFFSET (float)0
 
 
+
+/**
+ * @class Joint
+ * @brief Represents a servo-controlled joint for the ChikoBot robot.
+ *        Provides methods for initialization, movement, speed control, and input attachment.
+ */
 class Joint{
     private:
-        Servo JointServo;  // create servo object to control a servo
-        TaskHandle_t JointSweepTaskHandle = NULL;
+        ESP32Servo JointServo;  // Servo object to control the joint
+        TaskHandle_t JointSweepTaskHandle = NULL; // RTOS task handle for sweeping motion
     public:
         float JointOffset = 0;   // Measured offset of the joint
-        float JointAngle = 0; // Inital Angle
-        float JointAngleSetPoint = 0;
-        float JointSpeed = DEFAULT_JOINT_SPEED;
-        float JointBaseSpeed = DEFAULT_JOINT_SPEED;
-        bool enableSweep = false;
-        bool isJointBusy = false;
+        float JointAngle = 0;    // Current angle of the joint
+        float JointAngleSetPoint = 0; // Target angle for the joint
+        float JointSpeed = DEFAULT_JOINT_SPEED; // Current speed of the joint
+        float JointBaseSpeed = DEFAULT_JOINT_SPEED; // Base speed for the joint
+        bool enableSweep = false; // Whether sweep mode is enabled
+        bool isJointBusy = false; // Whether the joint is currently moving
+
+        /**
+         * @brief Write a specific angle to the servo (low-level control).
+         * @param angle Angle in degrees to set the servo to.
+         */
         void ServoWrite(float angle);
 
-        /*
-        Set the Joint to zero position
-        */
+        /**
+         * @brief Set the joint to its zero (home) position.
+         */
         void setToZero(void);
 
-        /*
-        Initilize the Joint
-        */
+        /**
+         * @brief Initialize the joint with a port, speed, and offset.
+         * @param JointPort The pin number for the servo.
+         * @param speed The speed to initialize the joint with (default: DEFAULT_JOINT_SPEED).
+         * @param offset The offset to apply to the joint (default: 0).
+         */
         void init_joint(int JointPort, float speed = DEFAULT_JOINT_SPEED, float offset=0);
 
-        /*
-            Make a fastest moment of the joint by making a step change in the joint angle
-        */
+        /**
+         * @brief Move the joint by a step in the specified direction.
+         * @param direction Direction to move (POSITIVE or NEGATIVE).
+         */
         void stepAngle (DIRECTION direction);
 
-        /*
-            Read the current joint angle
-        */
+        /**
+         * @brief Get the current angle of the joint.
+         * @return The current angle as an integer.
+         */
         int getAngle();
 
-        /*
-        Toggle ON/OFF the joint sweep from 90 <-> -90 degrees
-        */
+        /**
+         * @brief Toggle the sweep mode (oscillate between -90 and 90 degrees).
+         */
         void toggleJointSweep(void);
 
-        /*
-        Start joint sweep 90 <-> -90 degrees
-        */
+        /**
+         * @brief Start sweeping the joint between -90 and 90 degrees.
+         * @param bindKey If true, bind sweep to a key event (default: false).
+         */
         void startJointSweep(bool bindKey=false);
 
-        /*
-        Move joint to the given angle at a given speed
-        */
+        /**
+         * @brief Move the joint to a given angle at a specified speed.
+         * @param angle Target angle in degrees.
+         * @param percentageSpeed Speed as a percentage of max (default: 20).
+         * @param enable If true, enable movement (default: true).
+         */
         void setAngle(float angle,int percentageSpeed=20, bool enable=true);
 
-        /*
-        Set joint speed
-        */
+        /**
+         * @brief Set the speed of the joint.
+         * @param speed Speed value to set.
+         */
         void setSpeed(float speed);
 
+        /**
+         * @brief Set the base speed of the joint.
+         * @param BaseSpeed The base speed value.
+         */
         void setBaseSpeed(float BaseSpeed);
 
+        /**
+         * @brief Get the base speed of the joint.
+         * @return The base speed value.
+         */
         float getBaseSpeed(void);
 
+        /**
+         * @brief Get the current speed of the joint.
+         * @return The current speed value.
+         */
         float getSpeed(void);
 
+        /**
+         * @brief Attach a joystick input to control the joint.
+         * @param JoyStickInput The input value from the joystick.
+         */
         void attachInput(float JoyStickInput);
 
+        /**
+         * @brief Attach a button input to control the joint.
+         * @param ButtonInput The input value from the button.
+         */
         void attachInput(bool ButtonInput);
-
 };
 
 
+
+/**
+ * @brief Initialize all joints by passing pointers to each joint object.
+ * @param LeftFootJoint Pointer to the left foot joint.
+ * @param LeftLegJoint Pointer to the left leg joint.
+ * @param RightFootJoint Pointer to the right foot joint.
+ * @param RightLegJoint Pointer to the right leg joint.
+ */
 void initialize_joints(Joint *LeftFootJoint, Joint *LeftLegJoint, Joint *RightFootJoint, Joint *RightLegJoint);
 
+/**
+ * @brief Enable all joints (power on or activate servos).
+ */
 void enable_joints(void);
 
+/**
+ * @brief Disable all joints (power off or deactivate servos).
+ */
 void disable_joints(void);
 
+/**
+ * @brief Run the joint calibration routine for all joints.
+ */
 void jointCalibrationsRoutine(void);
 
+/**
+ * @brief Get the status of a specific joint.
+ * @param joint The joint to check.
+ * @return True if the joint is enabled/active, false otherwise.
+ */
 bool getJointStatus(Joint joint);
 
+/**
+ * @brief Check if all joints are enabled/active.
+ * @return True if all joints are enabled, false otherwise.
+ */
 bool allJointsStatus(void);
 
+/**
+ * @brief Check if the left-side joints are enabled/active.
+ * @return True if left joints are enabled, false otherwise.
+ */
 bool leftJointStatus(void);
 
+/**
+ * @brief Check if the right-side joints are enabled/active.
+ * @return True if right joints are enabled, false otherwise.
+ */
 bool rightJointStatus(void);
 
+/**
+ * @brief Set the speed for all joints.
+ * @param speed The speed value to set.
+ */
 void setAllJointsSpeed(float speed); 
 
+/**
+ * @brief Set the base speed for all joints.
+ * @param BaseSpeed The base speed value to set.
+ */
 void setAllJointsBaseSpeed(float BaseSpeed); 
 
+/**
+ * @brief Block execution until all joints are available (not busy).
+ */
 void waitTillAllJointsAvailable(void);
 
 

@@ -260,8 +260,9 @@ void Joint::setToZero(void) {
     Initilize the Joint
     */
 void Joint::init_joint(int JointPort, float speed, float offset) {
-  JointServo.setPeriodHertz(50);            // standard 50 hz servo
-  JointServo.attach(JointPort, 250, 2500);  // attaches the servo on pin 18 to the servo object
+  JointServo.setFrequency(50);            // standard 50 hz servo
+  JointServo.setResolution(10);           // 10 bit resolution
+  JointServo.attach(JointPort, 0); // attaches the servo on pin to the servo object
   ServoWrite(JointAngle);
   JointSpeed = speed;
   JointOffset = offset;

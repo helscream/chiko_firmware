@@ -5,7 +5,7 @@
 
 #include <RTOS.h>
 
-#define U_LONGLONGMAX 18446744073709551615
+#define U_LONGLONGMAX 18446744073709551615ULL
 
 struct routines{
   void (*EnterRoutine)();
