@@ -1,4 +1,4 @@
-#include "bController.h"
+#include "chiko_bController.h"
 #include <RTOS.h>
 
 // Store up to the max number of connected controllers
@@ -103,7 +103,7 @@ void sendVibration(uint8_t leftMain, uint8_t rightMain,
   // Depending on library version, this may be named `sendVibrations(...)` or `vibrate(...)`.
   // If your IDE flags an unknown method, open BLEVibrationsCommand.h / BLEController.h
   // in your installed library for the exact name and adjust here.
-  controller.vibrate(cmd);
+  controller.writeVibrations(cmd);
 }
 
 
