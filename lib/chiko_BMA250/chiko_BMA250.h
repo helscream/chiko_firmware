@@ -111,7 +111,7 @@ class BMA250{
     /**
      * @brief Initialize the BMA250 sensor (I2C setup, configuration, etc).
      */
-    void intilize(void);
+    void initialize(void);
 
     /**
      * @brief Read a register from the BMA250.
@@ -169,6 +169,42 @@ class BMA250{
      * @return The face (see TapFace enum).
      */
     TapFace getLastTapFace(void);
+
+  /**
+   * @brief Get the angle in degrees between the X and Y axes.
+   * @return Angle in degrees.
+   */
+  float getAngleXY(void);
+
+  /**
+   * @brief Get the angle in degrees between the X and Z axes.
+   * @return Angle in degrees.
+   */
+  float getAngleXZ(void);
+
+  /**
+   * @brief Get the angle in degrees between the Y and Z axes.
+   * @return Angle in degrees.
+   */
+  float getAngleYZ(void);
+
+  /**
+   * @brief Get the pitch angle of the sensor (rotation around Y axis).
+   * @return Pitch angle in degrees.
+   */
+  float getPitchAngle(void);
+
+  /**
+   * @brief Get the roll angle of the sensor (rotation around X axis).
+   * @return Roll angle in degrees.
+   */
+  float getRollAngle(void);
+
+  /**
+   * @brief Get the temperature reading from the sensor (if supported).
+   * @return Temperature in degrees Celsius.
+   */
+  float getTemperature(void);
 };
 
 

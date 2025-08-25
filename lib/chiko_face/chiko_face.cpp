@@ -10,11 +10,49 @@
 
 #include "chiko_face.h"
 
+// Color definitions for display
+int COLOR_WHITE = 1;
+int COLOR_BLACK = 0;
+
+// Demo mode state variables
+int demo_mode = 0;                        // 1 = demo mode, 0 = command mode
+static const int max_animation_index = 8; // Number of available animations
+int current_animation_index = 0;          // Current animation index
+
+// Display dimensions
+static const int SCREEN_WIDTH = 128;
+static const int SCREEN_HEIGHT = 64;
+
+// Reference state for eyes (default positions and sizes)
+int ref_left_eye = 32;
+int ref_eye_height = 40;
+int ref_eye_width = 40;
+int ref_space_between_eye = 10;
+int ref_corner_radius = 10;
+
+// Current state of the eyes (positions, sizes, and corner radius)
+int left_eye_height = ref_eye_height;
+int left_eye_width = ref_eye_width;
+int left_eye_x = ref_left_eye;
+int left_eye_y = ref_left_eye;
+int right_eye_x = ref_left_eye + ref_eye_width + ref_space_between_eye;
+int right_eye_y = ref_left_eye;
+int right_eye_height = ref_eye_height;
+int right_eye_width = ref_eye_width;
+int corner_radius = ref_corner_radius;
+
+
+
+// u8g2 display object for SSD1309 128x64 OLED (hardware SPI)
+U8G2_SSD1309_128X64_NONAME2_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/NULL, /* dc=*/26, /* reset=*/25);
+static bool u8g2_initialized = false;
+
 
 /**
  * @brief Clears the display buffer (does not update the screen until display_display is called).
  */
 void display_clearDisplay() {
+  if (!u8g2_initialized) return;
   u8g2.clearBuffer();
 }
 /**
@@ -22,6 +60,7 @@ void display_clearDisplay() {
  *        Ensures valid radius and minimum size for the rectangle.
  */
 void display_fillRoundRect(int x, int y, int w, int h, int r, int color) {
+  if (!u8g2_initialized) return;
   u8g2.setDrawColor(color);
   // behavior is not defined if r is smaller than the height or width
   if (w < 2 * (r + 1)) {
@@ -38,6 +77,7 @@ void display_fillRoundRect(int x, int y, int w, int h, int r, int color) {
  * @brief Sends the buffer to the display (refreshes the screen).
  */
 void display_display() {
+  if (!u8g2_initialized) return;
   u8g2.sendBuffer();
 }
 
@@ -46,6 +86,7 @@ void display_display() {
  * @brief Draws a filled triangle with the given coordinates and color.
  */
 void display_fillTriangle(int x0, int y0, int x1, int y1, int x2, int y2, int color) {
+  if (!u8g2_initialized) return;
   u8g2.setDrawColor(color);
   u8g2.drawTriangle(x0, y0, x1, y1, x2, y2);
 }
@@ -56,6 +97,7 @@ void display_fillTriangle(int x0, int y0, int x1, int y1, int x2, int y2, int co
  * @param update If true, sends the buffer to the display after drawing.
  */
 void draw_eyes(bool update) {
+  if (!u8g2_initialized) return;
   display_clearDisplay();
   //draw from center
   int x = int(left_eye_x - left_eye_width / 2);
@@ -74,7 +116,7 @@ void draw_eyes(bool update) {
  * @brief Resets both eyes to their default (centered) positions and sizes, then draws them.
  * @param update If true, updates the display after drawing.
  */
-void reset_eyes(bool update) {
+void eyes_reset(bool update) {
   //move eyes to the center of the display, defined by SCREEN_WIDTH, SCREEN_HEIGHT
   left_eye_height = ref_eye_height;
   left_eye_width = ref_eye_width;
@@ -95,8 +137,8 @@ void reset_eyes(bool update) {
  * @brief Performs a blink animation by shrinking and restoring the eyes.
  * @param speed The speed of the blink (default: 12).
  */
-void blink(int speed) {
-  reset_eyes(false);
+void eyes_blink(int speed) {
+  eyes_reset(false);
 
   draw_eyes(true);
 
@@ -125,8 +167,8 @@ void blink(int speed) {
 /**
  * @brief Sets the eyes to a "sleeping" state (thin horizontal lines).
  */
-void sleep() {
-  reset_eyes(false);
+void eyes_sleep() {
+  eyes_reset(false);
 
   left_eye_height = 2;
   left_eye_width = ref_eye_width;
@@ -140,10 +182,10 @@ void sleep() {
 /**
  * @brief Wakes up the eyes with an opening animation.
  */
-void wakeup() {
-  reset_eyes(false);
+void eyes_wakeup() {
+  eyes_reset(false);
 
-  sleep();
+  eyes_sleep();
 
   for (int h = 2; h <= ref_eye_height; h += 2) {
     left_eye_height = h;
@@ -160,8 +202,8 @@ void wakeup() {
 /**
  * @brief Draws a "happy" eye expression by overlaying triangles on the lower part of the eyes.
  */
-void happy_eye() {
-  reset_eyes(false);
+void eyes_happy() {
+  eyes_reset(false);
   //draw inverted triangle over eye lower part
   int offset = ref_eye_height / 2;
   for (int i = 0; i < 10; i++) {
@@ -182,7 +224,7 @@ void happy_eye() {
  * @param direction_x Horizontal direction: -1 (left), 1 (right), 0 (none).
  * @param direction_y Vertical direction: -1 (up), 1 (down), 0 (none).
  */
-void saccade(int direction_x, int direction_y) {
+void eyes_saccade(int direction_x, int direction_y) {
   //quick movement of the eye, no size change. stay at position after movement, will not move back,  call again with opposite direction
   //direction == -1 :  move left
   //direction == 1 :  move right
@@ -220,20 +262,20 @@ void saccade(int direction_x, int direction_y) {
 /**
  * @brief Moves the eyes in a big movement to the right.
  */
-void move_right_big_eye() {
-  move_big_eye(1);
+void eyes_move_right_big() {
+  eyes_move_big(1);
 }
 /**
  * @brief Moves the eyes in a big movement to the left.
  */
-void move_left_big_eye() {
-  move_big_eye(-1);
+void eyes_move_left_big() {
+  eyes_move_big(-1);
 }
 /**
  * @brief Moves the eyes in a big movement in the specified direction, with size and blink animation.
  * @param direction -1 for left, 1 for right.
  */
-void move_big_eye(int direction) {
+void eyes_move_big(int direction) {
   //direction == -1 :  move left
   //direction == 1 :  move right
 
@@ -305,9 +347,7 @@ void move_big_eye(int direction) {
   draw_eyes(true);
     delay(1);
   }
-
-
-  reset_eyes(true);
+  eyes_reset(true);
 }
 
 
@@ -327,39 +367,39 @@ void launch_animation_with_index(int animation_index) {
 
   switch (animation_index) {
     case 0:
-      wakeup();
+      eyes_wakeup();
       break;
     case 1:
-      reset_eyes(true);
+      eyes_reset(true);
       break;
     case 2:
-      move_right_big_eye();
+      eyes_move_right_big();
       break;
     case 3:
-      move_left_big_eye();
+      eyes_move_left_big();
       break;
     case 4:
-      blink(12);
+      eyes_blink(12);
       delay(1000);
       break;
     case 5:
-      blink(12);
+      eyes_blink(12);
       break;
     case 6:
-      happy_eye();
+      eyes_happy();
       break;
     case 7:
-      sleep();
+      eyes_sleep();
       break;
     case 8:
       break;
-      reset_eyes(true);
+      eyes_reset(true);
       for (int i = 0; i < 20; i++) {
         int dir_x = random(-1, 2);
         int dir_y = random(-1, 2);
-        saccade(dir_x, dir_y);
+        eyes_saccade(dir_x, dir_y);
         delay(1);
-        saccade(-dir_x, -dir_y);
+        eyes_saccade(-dir_x, -dir_y);
         delay(1);
       }
       break;
@@ -444,20 +484,21 @@ void FaceEmojiTask(void *parameter) {
 /**
  * @brief Initializes the face emoji system, display, and starts the animation task.
  */
-void initFaceEmoji() {
+void initializes_eyes() {
   //initialize the u8g2 lib.
   u8g2.begin();
+  u8g2_initialized = true;
 
   //clear screen and display startup info.
   display_clearDisplay();
-  sleep();
+  eyes_sleep();
   u8g2.setFont(u8g2_font_ncenB10_tr);
   u8g2.drawStr(0, 10, "CHIKO BOT");
 
   display_display();
 
   // Create FaceEmojiTask on core 1
-  xTaskCreatePinnedToCore(
-    FaceEmojiTask, "FaceEmojiTask", 10000, NULL, 1, &FaceEmojiTask_Handle, 1);
+  // xTaskCreatePinnedToCore(
+  //   FaceEmojiTask, "FaceEmojiTask", 10000, NULL, 1, &FaceEmojiTask_Handle, 1);
 }
 

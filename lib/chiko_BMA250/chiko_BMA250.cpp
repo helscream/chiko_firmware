@@ -1,7 +1,15 @@
-#include <chiko_BMA250.h> 
 
+/**
+ * @file chiko_BMA250.cpp
+ * @brief Implementation of BMA250 accelerometer interface for ChikoBot.
+ *
+ * This file provides functions to initialize, configure, and read data from the BMA250 accelerometer sensor.
+ * It also handles double-tap interrupts and allows attaching custom actions to tap events on different faces.
+ */
 
+#include <chiko_BMA250.h>
 
+// I2C address and register definitions for BMA250
 #define BMA250_I2C_ADDR           0x18
 // Register addresses
 #define BMA250_REG_CHIP_ID        0x00
@@ -35,23 +43,34 @@
 #define BMA250_REG_INT_9          0x2B       // Tap threshold configuration
 #define BMA250_REG_ORIENT_CONF    0x2F
 
-TapFace LastTap = NONE; 
-bool FLAG_DoubleTap = false;
 
+// Global state for tap detection
+TapFace LastTap = NONE; ///< Last detected tap face
+bool FLAG_DoubleTap = false; ///< Flag set by interrupt when double tap is detected
+
+
+/**
+ * @brief Interrupt service routine for double tap event.
+ * Sets the double tap flag to true.
+ */
 void BMA250_INIT_EVENT(void){
   FLAG_DoubleTap = true;
 }
 
+/**
+ * @brief FreeRTOS task to handle double tap events and call user actions.
+ * @param param Pointer to BMA250 object.
+ */
 void DoubleTapTask(void* param){
-  BMA250 *obj;
-  obj = (BMA250*) param;
-   Serial.println("BMA250 DoupleTap Task Started! ");
+  BMA250 *obj = (BMA250*) param;
+  Serial.println("BMA250 DoupleTap Task Started! ");
   uint8_t intrupt_direction = 0;
   while(1){
     if (FLAG_DoubleTap){
       FLAG_DoubleTap = false;
+      // Determine which face was tapped based on interrupt direction
       switch (intrupt_direction) {
-        case B11000000:
+        case 0b11000000:
           LastTap = TOP;
           if (obj->TopAction != NULL){
             obj->TopAction();
@@ -59,7 +78,7 @@ void DoubleTapTask(void* param){
           Serial.println("DoubleTap: Top");
           break;
         
-        case B10100000:
+        case 0b10100000:
           LastTap = FRONT;
           if (obj->FrontAction != NULL){
             obj->FrontAction();
@@ -67,7 +86,7 @@ void DoubleTapTask(void* param){
           Serial.println("DoubleTap: Front");
           break;
         
-        case B00010000:
+        case 0b00010000:
           LastTap = LEFT;
           if (obj->LeftAction != NULL){
             obj->LeftAction();
@@ -75,7 +94,7 @@ void DoubleTapTask(void* param){
           Serial.println("DoubleTap: Left");
           break;
         
-        case B10010000:
+        case 0b10010000:
           LastTap = RIGHT;
           if (obj->RightAction != NULL){
             obj->RightAction();
@@ -83,7 +102,7 @@ void DoubleTapTask(void* param){
           Serial.println("DoubleTap: Right");
           break;
         
-        case B01000000:
+        case 0b01000000:
           LastTap = BOTTOM;
           if (obj->BottomAction != NULL){
             obj->BottomAction();
@@ -91,7 +110,7 @@ void DoubleTapTask(void* param){
           Serial.println("DoubleTap: Bottom");
           break;
 
-        case B00100000:
+        case 0b00100000:
           LastTap = BACK;
           if (obj->BackAction != NULL){
             obj->BackAction();
@@ -111,11 +130,19 @@ void DoubleTapTask(void* param){
   }
 }
 
+/**
+ * @brief Set the measurement range of the BMA250 sensor.
+ * @param range The desired range (e.g., ±2g, ±4g, etc.)
+ */
 void BMA250::setRange(BMA250Range range){
   writeRegister(BMA250_REG_RANGE,(uint8_t)range);
 }
 
-// Reading register
+/**
+ * @brief Read a single byte from a BMA250 register.
+ * @param RegAddr Register address to read from.
+ * @return Value read from the register, or 0xFF if failed.
+ */
 uint8_t BMA250::readRegister(uint8_t RegAddr){
   Wire.beginTransmission(BMA250_I2C_ADDR);
   Wire.write(RegAddr);
@@ -127,7 +154,11 @@ uint8_t BMA250::readRegister(uint8_t RegAddr){
   return 0xFF;  // Return invalid value if read fails
 }
 
-// Write register
+/**
+ * @brief Write a single byte to a BMA250 register.
+ * @param RegAddr Register address to write to.
+ * @param value Value to write.
+ */
 void BMA250::writeRegister(uint8_t RegAddr, uint8_t value){
   Wire.beginTransmission(BMA250_I2C_ADDR);
   Wire.write(RegAddr);
@@ -135,15 +166,24 @@ void BMA250::writeRegister(uint8_t RegAddr, uint8_t value){
   Wire.endTransmission();
 }
 
+/**
+ * @brief Set the bandwidth (output data rate) of the BMA250 sensor.
+ * @param bw Desired bandwidth setting.
+ */
 void BMA250::setBandwidth(BMA250Bandwidth bw){
-// Register 0X10 (PMU_BW)
-// BITs   7              6              5               4              3                 2                 1               0
-//        reserve(7:5)                                   bw<4:0>         
+  // Register 0X10 (PMU_BW)
+  // BITs   7:5 reserved, 4:0 bw<4:0>
   writeRegister(BMA250_REG_BW,(uint8_t)bw);
 }
 
+/**
+ * @brief Read a 10-bit signed value from the specified axis registers.
+ * @param msbReg Register address for MSB.
+ * @param lsbReg Register address for LSB.
+ * @return Signed 10-bit raw value.
+ */
 int16_t BMA250::readAxis(uint8_t msbReg, uint8_t lsbReg) {
-  uint8_t lsb = readRegister(lsbReg); // The LSB must always be read first to keep the integrety of data
+  uint8_t lsb = readRegister(lsbReg); // The LSB must always be read first to keep the integrity of data
   uint8_t msb = readRegister(msbReg);
   // Combine MSB and LSB (10-bit value)
   int16_t raw = ((int16_t)msb << 2) | (lsb >> 6);
@@ -152,6 +192,10 @@ int16_t BMA250::readAxis(uint8_t msbReg, uint8_t lsbReg) {
   return raw;
 }
 
+/**
+ * @brief Read acceleration in g for the X axis.
+ * @return Acceleration in g.
+ */
 float BMA250::readXaxis(void){
   int16_t x = readAxis(0x03, 0x02); // X axis
   // Convert raw to g-force (assuming ±2g range, 256 LSB/g)
@@ -159,6 +203,10 @@ float BMA250::readXaxis(void){
   return g;
 }
 
+/**
+ * @brief Read acceleration in g for the Y axis.
+ * @return Acceleration in g.
+ */
 float BMA250::readYaxis(void){
   int16_t y = readAxis(0x05, 0x04); // Y axis
   // Convert raw to g-force (assuming ±2g range, 256 LSB/g)
@@ -166,6 +214,10 @@ float BMA250::readYaxis(void){
   return g;
 }
 
+/**
+ * @brief Read acceleration in g for the Z axis.
+ * @return Acceleration in g.
+ */
 float BMA250::readZaxis(void){
   int16_t z = readAxis(0x07, 0x06); // Z axis
   // Convert raw to g-force (assuming ±2g range, 256 LSB/g)
@@ -173,6 +225,11 @@ float BMA250::readZaxis(void){
   return g;
 }
 
+/**
+ * @brief Attach a user-defined action to a double tap event on a specific face.
+ * @param face The face to attach the action to (TOP, BOTTOM, LEFT, RIGHT, FRONT, BACK).
+ * @param action Function pointer to the action to execute.
+ */
 void BMA250::attachDoubleTapToAction(TapFace face, void (*action)()){
   switch (face) {
   case TOP:
@@ -197,24 +254,23 @@ void BMA250::attachDoubleTapToAction(TapFace face, void (*action)()){
     break;
   }
 }
-
-//unit8_t tempReg = B00000000;
-void BMA250::intilize(void) { 
+/**
+ * @brief Initialize the BMA250 sensor, configure interrupts, and start the double tap task.
+ */
+void BMA250::initialize(void) { 
   pinMode(BMA250_INT_PIN, INPUT); // BMA250 is configured at active high
   attachInterrupt(BMA250_INT_PIN, BMA250_INIT_EVENT, FALLING);
 
   // Initialize sensor
   Wire.begin(); // SDA = GPIO21, SCL = GPIO22 by default on ESP32
   
-  writeRegister(BMA250_REG_BGW_SOFTRESET, 0xB6);
+  writeRegister(BMA250_REG_BGW_SOFTRESET, 0xB6); // Soft reset
   // Reading Chip ID:
   Serial.print("Chip ID: ");
   Serial.println(readRegister(BMA250_REG_CHIP_ID));
 
-  // Optional: Set sensor to normal mode (register 0x11, value 0x00)
-  
+  // Set sensor to normal mode
   writeRegister(BMA250_REG_POWER_MODE, 0x00);
-
   Serial.print("Power Mode: ");
   Serial.println(readRegister(BMA250_REG_POWER_MODE));
 
@@ -224,77 +280,83 @@ void BMA250::intilize(void) {
   // Set Bandwidth
   setBandwidth(BW_125HZ);
 
-  // Set INT latch reset timer;
-  // Register 0x21 (INT_RST_LATCH)
-  // BITs   7           6          5         4          3        2         1        0
-  //        reset_int   Reserved(6:4)                       latch_int<3:0>
+  // Set INT latch reset timer
   writeRegister(BMA250_REG_INT_RST_LATCH,INT_MODE_1ms);
 
-  // Setting put interupt threshold for any motion
-  // Register 0x28 (INT_6)
-  // BITs   7           6          5         4             3               2         1        0
-  //         slope_th<7:4>                                     slope_th<3:0>
+  // Set interrupt threshold for any motion
   writeRegister(BMA250_REG_INT_6,0x04);
 
-  // Setting Tap configuration
-  // Register 0x2A (INT_8)
-  // BITs   7           6          5         4             3               2         1        0
-  //        tap_quiet   tap_shock  reserved  reserved   reserved      tap_dur<2:0>
-  //    tap_quite     |     tap_shock     |   tap_dur
-  //    0b    30ms    |      0b   50ms    |   000b  50ms
-  //    1b    20ms    |      1b   75ms    |   001b  100ms
-  //                  |                   |   010b  150ms
-  //                  |                   |   011b  200ms
-  //                  |                   |   100b  250ms
-  //                  |                   |   101b  375ms
-  //                  |                   |   110b  500ms
-  //                  |                   |   111b  700ms
+  // Set tap configuration
   writeRegister(BMA250_REG_INT_8,B10000110);
 
-  // Setting up tap thresholds
-  // Register 0x2B (INT_9) 
-  // BITs   7           6          5         4             3               2         1        0
-  //        tap_samp<7:6>          reserved     tap_th<4:0> 
-  //    tap_samp          |       tap_th  
-  //   00b  2 samples     |   
-  //   01b  4 samples     |
-  //   10b  8 samples     |
-  //   11b  16 samples    |
+  // Set tap thresholds
   writeRegister(BMA250_REG_INT_9,B10001000);
   
-  // Configuring the INT1 outpin
-  // Register 0X20 (INT_OUT_CTRL)
-  // BITs   7           6          5         4        3             2         1             0
-  //       Reserved (7:4)                            int2_od    int2_lvl   int1_od   int1_lvl
+  // Configure INT1 output pin
   writeRegister(BMA250_REG_INT_OUT_CTRL,B00000001);
 
-  // Configuring the source of data to the double tap intrupt engine
-  // Register 0x1E (INT_SRC)
-  // BITs   7           6          5             4             3               2         1               0
-  //         reserved (7:6)        int_src_data  int_src_tap   int_src_slo_no_mot        int_src_slope    int_src_low
-  // 0 -> Filtered data,      1 -> unfiltered data
- writeRegister(BMA250_REG_INT_SRC,B00000000); // INT mapped for double tap
+  // Configure source of data to double tap interrupt engine
+  writeRegister(BMA250_REG_INT_SRC,B00000000); // INT mapped for double tap
 
-
-
-  // Enabling any motion detection on x, y, & z axes or for taps
-  // Register 0x16 (INT_En_0)
-  // BITs   7           6            5             4             3                 2                 1               0
-  //        flat_en    orient_en     s_tap_en      d_tap_en      reserved          slope_en_z        slope_en_y      slope_en_x
-  // writeRegister(BMA250_REG_INT_EN_0,B00000111); // INT mapped for any motion
+  // Enable double tap interrupt
   writeRegister(BMA250_REG_INT_EN_0,B00010000); // INT mapped for double tap
 
-
-  // Mapping the interupt to INT1
-  //  Register 0x19 (INT_MAP_0)
-  // BITs   7           6            5             4             3                 2           1               0
-  //        int1_flat   int1_orient  int1_s_tap     int1_d_tap   int1_slo_no_mot   int1_slope  int1_high        int1_low
-  // writeRegister(BMA250_REG_INT_MAP_0, B00000100); // Mapped for any motion
-  writeRegister(BMA250_REG_INT_MAP_0, B00010000); // Mapped for douple tap
+  // Map the interrupt to INT1
+  writeRegister(BMA250_REG_INT_MAP_0, B00010000); // Mapped for double tap
   
+  // Start the double tap task
   xTaskCreate(DoubleTapTask,"Double Tap Task",2048,this,1,NULL);
 }
+  
 
-TapFace getLastTapFace(void){
+
+/**
+ * @brief Get the angle in degrees between the X and Y axes.
+ * @return Angle in degrees.
+ */
+float BMA250::getAngleXY(void){
+  float x = readXaxis();
+  float y = readYaxis();
+  return atan2(y, x) * 180.0 / PI;
+}
+/**
+ * @brief Get the angle in degrees between the X and Z axes.
+ * @return Angle in degrees.
+ */
+float BMA250::getAngleXZ(void){
+  float x = readXaxis();
+  float z = readZaxis();
+  return atan2(z, x) * 180.0 / PI;
+}
+/**
+ * @brief Get the angle in degrees between the Y and Z axes.
+ * @return Angle in degrees.
+ */
+float BMA250::getAngleYZ(void){
+  float y = readYaxis();
+  float z = readZaxis();
+  return atan2(z, y) * 180.0 / PI;
+}
+
+
+float BMA250::getPitchAngle(void){
+  return getAngleYZ() - 90;
+}
+
+float BMA250::getRollAngle(void){
+  return getAngleXZ() - 90;
+  }
+
+float BMA250::getTemperature(void){
+  // Temperature register is at 0x08, value in degrees Celsius = (value * 0.5) + 23
+  uint8_t temp_raw = readRegister(0x08);
+  return (temp_raw * 0.5) + 23;
+}
+
+/**
+ * @brief Get the last detected tap face.
+ * @return The last TapFace value (TOP, BOTTOM, LEFT, RIGHT, FRONT, BACK, NONE).
+ */
+TapFace BMA250::getLastTapFace(void){
   return LastTap;
 }

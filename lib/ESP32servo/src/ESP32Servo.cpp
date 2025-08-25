@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include "ESP32Servo.h"
 
 // Initialize static variables
@@ -27,8 +28,9 @@ void ESP32Servo::attach(uint8_t pin, uint8_t channel) {
 
 
     // Initialize PWM with the specified resolution and frequency
-    ledcSetup(_channel, _frequencyHz, _resolutionBits);
-    ledcAttachPin(_pin, _channel);
+    // ledcSetup(_channel, _frequencyHz, _resolutionBits);
+    // ledcAttachPin(_pin, _channel);
+    ledcAttach(_pin, _frequencyHz, _resolutionBits);
 }
 
 void ESP32Servo::writeMicroseconds(uint16_t microseconds) {
@@ -41,7 +43,8 @@ void ESP32Servo::writeMicroseconds(uint16_t microseconds) {
     uint32_t maxDuty = (1 << _resolutionBits);  // 65536 for 16-bit
     uint32_t duty = (uint32_t)microseconds * maxDuty / 20000;
 
-    ledcWrite(_channel, duty);
+    // ledcWrite(_channel, duty);
+    ledcWrite(_pin, duty);
 }
 
 void ESP32Servo::write(int angle) {
@@ -63,8 +66,10 @@ void ESP32Servo::write(int angle) {
     // Calculate duty cycle based on resolution and period
     uint32_t maxDuty = (1UL << _resolutionBits);
     uint32_t duty = (pulseWidth * maxDuty) / period;
+    
+        //ledcWrite(_channel, duty);
+    ledcWrite(_pin, duty);
 
-    ledcWrite(_channel, duty);
     _angle = angle;
 }
 
