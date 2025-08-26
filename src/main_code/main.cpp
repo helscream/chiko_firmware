@@ -31,7 +31,7 @@ void setup() {
    Serial.begin(115200);
   Serial.println("Chiko");
   
-  accelrometer.intilize();
+  accelrometer.initialize();
   //accelrometer.attachDoubleTapToAction(TOP, topAction);
 
   initialize_joints(&LeftFoot, &LeftLeg, &RightFoot, &RightLeg);
