@@ -14,9 +14,9 @@ Firmware and libraries for ChikoBot, an ESP32-based robot platform. This project
 ## Project Structure
 
 ```
-├── src/                  # Main application code
+├── src/main_code/        # Main application code
+├── src/examples/         # Example sketches and test programs
 ├── lib/                  # Libraries (BLE, face, sensors, etc.)
-├── examples/             # Example sketches and test programs
 ├── platformio.ini        # PlatformIO configuration
 └── README.md             # This file
 ```
