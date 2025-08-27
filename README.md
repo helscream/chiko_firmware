@@ -80,16 +80,16 @@ cd chiko_firmware
 3. Build and upload the `main.cpp`.
 4. Monitor the out using `Serial Terminal`.
 
-## Detailed Tutorials, Library Discription and Workflow
-1. [How to setup the development envoirnment](https://github.com/helscream/chiko_firmware/wiki/Setup-Development-Environment).
-2. [Tutorails](https://github.com/helscream/chiko_firmware/wiki/Firmware-Tutorial)
-3. All more in the [Wiki](https://github.com/helscream/chiko_firmware/wiki) of the Repo.
-
 ## VS Code/PlatformIO Tips
 - Use the PlatformIO sidebar for all build, upload, and monitor tasks.
 - Use "Clean" if you encounter strange build errors.
 - You can have multiple environments for different tests/examples.
 - Use `build_src_filter` to control which files are compiled for each environment.
+
+## Detailed Tutorials, Library Discription and Workflow
+1. [How to setup the development envoirnment](https://github.com/helscream/chiko_firmware/wiki/Setup-Development-Environment).
+2. [Tutorails](https://github.com/helscream/chiko_firmware/wiki/Firmware-Tutorial)
+3. All more in the [Wiki](https://github.com/helscream/chiko_firmware/wiki) of the Repo.
 
 ## Contributing
 Contributions are welcome! Please fork the repo and submit a merge request.
