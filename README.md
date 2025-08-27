@@ -70,23 +70,20 @@ cd chiko_firmware
 4. Build, upload, and monitor using PlatformIO sidebar
 
 ## Running Examples
-
 - Each example or test has its own environment in `platformio.ini`.
 - To run an example, build/upload the corresponding environment (e.g., `Example_XboxController`).
 - You can add new examples in the `examples/` folder and create a new environment with a `build_src_filter` in `platformio.ini`.
 
-## Adding a New Example
-1. Create a new folder in `examples/` and add your `.cpp` file(s).
-2. Add a new environment to `platformio.ini`:
-	```ini
-	[env:Example_MyDemo]
-	platform = espressif32
-	board = esp32dev
-	framework = arduino
-	build_src_filter = +<examples/MyDemo/*>
-	monitor_speed = 115200
-	```
-3. Build and upload using the new environment.
+## Test Your Code
+1. Edit ´src/main_code/main.cpp´.
+2. Select `chiko_main` environment under "PROJECT TASKS"
+3. Build and upload the `main.cpp`.
+4. Monitor the out using `Serial Terminal`.
+
+## Detailed Tutorials, Library Discription and Workflow
+1. [How to setup the development envoirnment](https://github.com/helscream/chiko_firmware/wiki/Setup-Development-Environment).
+2. [Tutorails](https://github.com/helscream/chiko_firmware/wiki/Firmware-Tutorial)
+3. All more in the [Wiki](https://github.com/helscream/chiko_firmware/wiki) of the Repo.
 
 ## VS Code/PlatformIO Tips
 - Use the PlatformIO sidebar for all build, upload, and monitor tasks.
