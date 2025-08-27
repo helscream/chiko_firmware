@@ -74,8 +74,8 @@ cd chiko_firmware
 - To run an example, build/upload the corresponding environment (e.g., `Example_XboxController`).
 - You can add new examples in the `examples/` folder and create a new environment with a `build_src_filter` in `platformio.ini`.
 
-## Test Your Code
-1. Edit ´src/main_code/main.cpp´.
+## Test Your OWN Code
+1. Edit `src/main_code/main.cpp´.
 2. Select `chiko_main` environment under "PROJECT TASKS"
 3. Build and upload the `main.cpp`.
 4. Monitor the out using `Serial Terminal`.
