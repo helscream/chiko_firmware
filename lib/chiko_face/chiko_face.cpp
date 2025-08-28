@@ -9,6 +9,11 @@
  */
 
 #include "chiko_face.h"
+#include <string>
+#include <deque>
+#define MAX_LOG_LINES 6 // Number of lines to show (depends on font size and screen height)
+static std::deque<std::string> message_log;
+
 
 // Color definitions for display
 int COLOR_WHITE = 1;
@@ -44,9 +49,167 @@ int corner_radius = ref_corner_radius;
 
 
 // u8g2 display object for SSD1309 128x64 OLED (hardware SPI)
-U8G2_SSD1309_128X64_NONAME2_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/NULL, /* dc=*/26, /* reset=*/25);
+U8G2_SSD1309_128X64_NONAME2_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/U8X8_PIN_NONE, /* dc=*/26, /* reset=*/25);
 static bool u8g2_initialized = false;
 
+// --- Message log for scrolling messages ---
+
+/**
+ * @brief Prints a message on the display, scrolling old messages up as new ones arrive.
+ * @param message The message to print.
+ * @param font_size The font size to use (8, 10, 12, etc.).
+ * @param clear If true, clears the display before printing (default: true).
+ */
+// Prints a message to the display, handling newlines and scrolling.
+// - message: The string to print. '\n' triggers a new line and scrolls up if needed.
+// - font_size: Font size to use (8, 10, 12, 14, 18, 24).
+// - clear: If true, clears the display before printing.
+void facePrint(const std::string &message, uint8_t font_size, bool clear) {
+  if (!u8g2_initialized) return;
+  static std::string line_buffer = ""; // Buffer for the current line being built
+  size_t start = 0;
+  // Process the message, splitting on '\n' and scrolling as needed
+  while (start < message.length()) {
+    size_t newline_pos = message.find('\n', start);
+    if (newline_pos == std::string::npos) {
+      // No more newlines, append rest to buffer
+      line_buffer += message.substr(start);
+      // Update or add the current line in the log
+      if (!message_log.empty()) {
+        message_log.back() = line_buffer;
+      } else {
+        message_log.push_back(line_buffer);
+      }
+      break;
+    } else {
+      // Append up to newline, then push as a new line in the log
+      line_buffer += message.substr(start, newline_pos - start);
+      message_log.push_back(line_buffer);
+      line_buffer.clear();
+      // Scroll up: keep only the last MAX_LOG_LINES lines
+      while (message_log.size() > MAX_LOG_LINES) {
+        message_log.pop_front();
+      }
+      start = newline_pos + 1;
+    }
+  }
+  // Select font based on font_size
+  switch (font_size) {
+    case 8: u8g2.setFont(u8g2_font_ncenB08_tr); break;
+    case 10: u8g2.setFont(u8g2_font_ncenB10_tr); break;
+    case 12: u8g2.setFont(u8g2_font_ncenB12_tr); break;
+    case 14: u8g2.setFont(u8g2_font_ncenB14_tr); break;
+    case 18: u8g2.setFont(u8g2_font_ncenB18_tr); break;
+    case 24: u8g2.setFont(u8g2_font_ncenB24_tr); break;
+    default: u8g2.setFont(u8g2_font_ncenB10_tr); break;
+  }
+  if (clear) u8g2.clearBuffer();
+  u8g2.setDrawColor(COLOR_WHITE);
+  // Calculate line height for vertical spacing
+  int line_height = u8g2.getMaxCharHeight() + 2;
+  int y = line_height; // Start at first line
+  // Draw each message in the log, wrapping long lines
+  for (const auto& msg : message_log) {
+    int x = 0;
+    size_t start = 0;
+    size_t len = msg.length();
+    while (start < len) {
+      // Find how many characters fit in 128 pixels
+      size_t end = start;
+      int w = 0;
+      while (end < len) {
+        std::string sub = msg.substr(start, end - start + 1);
+        w = u8g2.getUTF8Width(sub.c_str());
+        if (w > SCREEN_WIDTH) break;
+        end++;
+      }
+      if (end == start) end++; // Always print at least one character
+      std::string line = msg.substr(start, end - start);
+      u8g2.drawUTF8(x, y, line.c_str()); // Draw the line
+      y += line_height;
+      if (y > SCREEN_HEIGHT) break;
+      start = end;
+    }
+    if (y > SCREEN_HEIGHT) break;
+  }
+  u8g2.sendBuffer(); // Update the display
+}
+
+void facePrint(const int number, uint8_t font_size, bool clear) {
+  facePrint(std::to_string(number), font_size, clear);
+}
+void facePrint(const float number, uint8_t font_size, bool clear) {
+  facePrint(std::to_string(number), font_size, clear);
+}
+void facePrint(const char message, uint8_t font_size, bool clear) {
+  facePrint(std::string(1, message), font_size, clear);
+}
+
+void facePrintln(const std::string &message, uint8_t font_size, bool clear) {
+  facePrint(message + '\n', font_size, clear);
+}
+void facePrintln(const int number, uint8_t font_size, bool clear) {
+  facePrint(std::to_string(number) + '\n', font_size, clear);
+}
+void facePrintln(const float number, uint8_t font_size, bool clear) {
+  facePrint(std::to_string(number) + '\n', font_size, clear);
+}
+void facePrintln(const char message, uint8_t font_size, bool clear) {
+  facePrint(std::string(1, message) + '\n', font_size, clear);
+}
+
+
+void facePrintMiddle(const std::string &text, bool clear, uint8_t font_size) {
+  if (!u8g2_initialized) return;
+  // Select font based on font_size parameter
+  switch (font_size) {
+    case 8:
+      u8g2.setFont(u8g2_font_ncenB08_tr); // 8pt font
+      break;
+    case 10:
+      u8g2.setFont(u8g2_font_ncenB10_tr); // 10pt font
+      break;
+    case 12:
+      u8g2.setFont(u8g2_font_ncenB12_tr); // 12pt font
+      break;
+    case 14:
+      u8g2.setFont(u8g2_font_ncenB14_tr); // 14pt font
+      break;
+    case 18:
+      u8g2.setFont(u8g2_font_ncenB18_tr); // 18pt font
+      break;
+    case 24:
+      u8g2.setFont(u8g2_font_ncenB24_tr); // 24pt font
+      break;
+    default:
+      u8g2.setFont(u8g2_font_ncenB08_tr); // Default to 8pt font
+      break;
+  }
+  if (clear) {
+    u8g2.clearBuffer();
+  }
+  u8g2.setDrawColor(COLOR_WHITE);
+  int16_t x, y;
+  uint16_t w, h;
+  w = u8g2.getUTF8Width(text.c_str());
+  h = u8g2.getMaxCharHeight();
+  x = (SCREEN_WIDTH - w) / 2; // Center horizontally
+  y = (SCREEN_HEIGHT - h) / 2 + h; // Center vertically (baseline)
+  u8g2.drawUTF8(x, y, text.c_str());
+  u8g2.sendBuffer(); // Update display
+}
+
+void facePrintMiddle(const int number, bool clear, uint8_t font_size) {
+  facePrintMiddle(std::to_string(number), clear, font_size);
+}
+
+void facePrintMiddle(const float number, bool clear, uint8_t font_size) {
+  facePrintMiddle(std::to_string(number), clear, font_size);
+}
+
+void facePrintMiddle(const char message, bool clear, uint8_t font_size) {
+  facePrintMiddle(std::string(1, message), clear, font_size);
+}
 
 /**
  * @brief Clears the display buffer (does not update the screen until display_display is called).
@@ -484,7 +647,7 @@ void FaceEmojiTask(void *parameter) {
 /**
  * @brief Initializes the face emoji system, display, and starts the animation task.
  */
-void initializes_eyes() {
+void initialize_face() {
   //initialize the u8g2 lib.
   u8g2.begin();
   u8g2_initialized = true;
@@ -493,7 +656,7 @@ void initializes_eyes() {
   display_clearDisplay();
   eyes_sleep();
   u8g2.setFont(u8g2_font_ncenB10_tr);
-  u8g2.drawStr(0, 10, "CHIKO BOT");
+  u8g2.drawStr(0, 10, "CHIKO");
 
   display_display();
 

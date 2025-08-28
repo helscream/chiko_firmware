@@ -7,6 +7,8 @@
 #include <chiko_BMA250.h>      // BMA250 accelerometer support
 #include <chiko_action.h>      // Predefined actions for ChikoBot
 #include <chiko_face.h>        // ChikoBot facial expressions
+#include <esp_sleep.h>         // ESP32 deep sleep functionality
+#include <esp_err.h>          // ESP32 error codes
 
 
 #define HOLD_TIME_MS 5000

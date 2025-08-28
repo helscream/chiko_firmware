@@ -19,6 +19,11 @@ void loop() {
     const char spinnerChars[] = {'|', '/', '-', '\\'};
     Serial.print("\r"); // Return to start of line
     Serial.print(spinnerChars[spinnerIndex]);
+    facePrint(spinnerChars[spinnerIndex]); // Update face display with spinner character
+    facePrint('\n'); // Clear face display after full cycle
     spinnerIndex = (spinnerIndex + 1) % 4; // Move to next spinner character
+    // if (spinnerIndex == 0) {
+    //   facePrint('\n'); // Clear face display after full cycle
+    // }
     delay(100); // Delay to control spinner speed
 }

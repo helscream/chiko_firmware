@@ -1,17 +1,9 @@
 #ifndef __CHIKO_FACEEMOJI__
 #define __CHIKO_FACEEMOJI__
-/**
- * @file chiko_face.h
- * @brief Declarations and state for ChikoBot's facial animation and display routines using u8g2.
- *
- * This header defines variables and functions for controlling and animating the robot's eyes and facial expressions
- * on an OLED display, including blinking, saccades, happy/sleepy eyes, and demo/command modes.
- */
-
-
 
 #include <SPI.h>
 #include <U8g2lib.h>
+#include <string>
 
 
 
@@ -27,7 +19,11 @@ void testFaceEmoji();
  */
 void display_clearDisplay();
 
+
 /**
+ * @brief Demo/test function for face emoji animations. Cycles animations in demo mode or responds to serial commands.
+ *        Call this in your main loop for demo/command mode.
+ *
  * @brief Draws a filled rounded rectangle at (x, y) with width w, height h, corner radius r, and color.
  */
 void display_fillRoundRect();
@@ -107,6 +103,66 @@ void launch_animation_with_index(int animation_index);
 /**
  * @brief Initializes the face emoji system, display, and starts the animation task.
  */
-void initializes_eyes();
+void initialize_face();
+
+
+/**
+ * @brief Print text centered on the display.
+ * @param text The string to print
+ * @param clear If true, clears the display before printing
+ * @param font_size Font size (8, 10, 12, 14, 18, 24)
+ */
+void facePrintMiddle(const std::string &text, bool clear = true, uint8_t font_size = 10);
+/**
+ * @brief Print an integer centered on the display.
+ * @param number The integer to print
+ * @param clear If true, clears the display before printing
+ * @param font_size Font size (8, 10, 12, 14, 18, 24)
+ */
+void facePrintMiddle(const int number, bool clear = true, uint8_t font_size = 10);
+/**
+ * @brief Print a float centered on the display.
+ * @param number The float to print
+ * @param clear If true, clears the display before printing
+ * @param font_size Font size (8, 10, 12, 14, 18, 24)
+ */
+void facePrintMiddle(const float number, bool clear = true, uint8_t font_size = 10);
+/**
+ * @brief Print a single character centered on the display.
+ * @param message The character to print
+ * @param clear If true, clears the display before printing
+ * @param font_size Font size (8, 10, 12, 14, 18, 24)
+ */
+void facePrintMiddle(const char message, bool clear = true, uint8_t font_size = 10);
+
+/**
+ * @brief Print text to the display log, scrolling up as new lines are added. '\n' triggers a new line.
+ * @param message The string to print (can include '\n')
+ * @param font_size Font size (8, 10, 12, 14, 18, 24)
+ * @param clear If true, clears the display before printing
+ */
+void facePrint(const std::string &message, uint8_t font_size = 8, bool clear = true);
+/**
+ * @brief Print an integer to the display log, scrolling up as new lines are added.
+ * @param number The integer to print
+ * @param font_size Font size (8, 10, 12, 14, 18, 24)
+ * @param clear If true, clears the display before printing
+ */
+void facePrint(const int number, uint8_t font_size = 8, bool clear = true);
+/**
+ * @brief Print a float to the display log, scrolling up as new lines are added.
+ * @param number The float to print
+ * @param font_size Font size (8, 10, 12, 14, 18, 24)
+ * @param clear If true, clears the display before printing
+ */
+void facePrint(const float number, uint8_t font_size = 8, bool clear = true);
+/**
+ * @brief Print a single character to the display log, scrolling up as new lines are added.
+ * @param message The character to print
+ * @param font_size Font size (8, 10, 12, 14, 18, 24)
+ * @param clear If true, clears the display before printing
+ */
+void facePrint(const char message, uint8_t font_size = 8, bool clear = true);
+// void facePrint(string message);
 
 #endif

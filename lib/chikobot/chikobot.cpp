@@ -70,4 +70,9 @@ void initilize_chikobot(void){
 	} else {
 		Serial.println("Hello.");
 	}
+
+    initialize_face();
+    initialize_joints(&LeftLeg, &RightLeg, &LeftFoot, &RightFoot);
+    accelrometer.initialize();
+    Serial.println("ChikoBot Initialized!");
 }
