@@ -159,6 +159,7 @@ void facePrintln(const char message, uint8_t font_size, bool clear) {
 }
 
 
+
 void facePrintMiddle(const std::string &text, bool clear, uint8_t font_size) {
   if (!u8g2_initialized) return;
   // Select font based on font_size parameter
@@ -189,13 +190,48 @@ void facePrintMiddle(const std::string &text, bool clear, uint8_t font_size) {
     u8g2.clearBuffer();
   }
   u8g2.setDrawColor(COLOR_WHITE);
-  int16_t x, y;
-  uint16_t w, h;
-  w = u8g2.getUTF8Width(text.c_str());
-  h = u8g2.getMaxCharHeight();
-  x = (SCREEN_WIDTH - w) / 2; // Center horizontally
-  y = (SCREEN_HEIGHT - h) / 2 + h; // Center vertically (baseline)
-  u8g2.drawUTF8(x, y, text.c_str());
+
+  // Word wrap: split text into lines that fit within SCREEN_WIDTH
+  std::vector<std::string> lines;
+  size_t start = 0;
+  size_t len = text.length();
+  while (start < len) {
+    size_t end = start;
+    int w = 0;
+    size_t last_space = std::string::npos;
+    while (end < len) {
+      std::string sub = text.substr(start, end - start + 1);
+      w = u8g2.getUTF8Width(sub.c_str());
+      if (w > SCREEN_WIDTH) break;
+      if (text[end] == ' ') last_space = end;
+      if (text[end] == '\n') { // Handle explicit newlines
+        end++;
+        break;
+      }
+      end++;
+    }
+    // If we broke in the middle of a word, wrap at last space
+    if (w > SCREEN_WIDTH && last_space != std::string::npos && last_space > start) {
+      end = last_space + 1;
+    }
+    std::string line = text.substr(start, end - start);
+    // Remove trailing newline if present
+    if (!line.empty() && line.back() == '\n') line.pop_back();
+    lines.push_back(line);
+    start = end;
+  }
+
+  int line_height = u8g2.getMaxCharHeight() + 2;
+  int total_text_height = line_height * lines.size();
+  int y = (SCREEN_HEIGHT - total_text_height) / 2 + line_height; // Center block vertically
+
+  for (const auto& line : lines) {
+    int line_width = u8g2.getUTF8Width(line.c_str());
+    int x = (SCREEN_WIDTH - line_width) / 2; // Center each line horizontally
+    u8g2.drawUTF8(x, y, line.c_str());
+    y += line_height;
+    if (y > SCREEN_HEIGHT) break;
+  }
   u8g2.sendBuffer(); // Update display
 }
 
@@ -313,7 +349,7 @@ void eyes_blink(int speed) {
     left_eye_width = left_eye_width + 3;
     right_eye_width = right_eye_width + 3;
   draw_eyes(true);
-    delay(1);
+    delay(10);
   }
   for (int i = 0; i < 3; i++) {
     left_eye_height = left_eye_height + speed;
@@ -321,7 +357,7 @@ void eyes_blink(int speed) {
     left_eye_width = left_eye_width - 3;
     right_eye_width = right_eye_width - 3;
   draw_eyes(true);
-    delay(1);
+    delay(10);
   }
 }
 
