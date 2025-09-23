@@ -6,7 +6,36 @@
 #include <string>
 
 
+enum FaceEmoji {
+  WAKEUP,
+  RESET,
+  LOOK_RIGHT_BIG,
+  LOOK_LEFT_BIG,
+  BLINK_LONG,
+  BLINK_SHORT,
+  HAPPY,
+  SLEEPY,
+  IDLE_SACCADE,
+  NORMAL
+};
 
+enum Page {
+    LEFTPAGE,
+    FACE,
+    RIGHTPAGE,
+    OFF
+};
+
+
+
+
+void AttachPageTasks(Page TargetPage, void (*setup)(),void (*loop)());
+
+void DisplayPage(Page PageToDisplay);
+
+void display_OFF(void);
+
+void setFaceEmoji(FaceEmoji TargetFaceEmoji);
 
 
 /**

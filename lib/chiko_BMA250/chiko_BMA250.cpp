@@ -290,7 +290,7 @@ void BMA250::initialize(void) {
   writeRegister(BMA250_REG_INT_8,B10000110);
 
   // Set tap thresholds
-  writeRegister(BMA250_REG_INT_9,B10001000);
+  writeRegister(BMA250_REG_INT_9,B1000010);
   
   // Configure INT1 output pin
   writeRegister(BMA250_REG_INT_OUT_CTRL,B00000001);

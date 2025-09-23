@@ -15,6 +15,17 @@
 
 #define HOLD_TIME_MS 5000
 
+enum LEDStates {
+  LED_OFF,
+  LED_ON_SOLID,
+  LED_DOUBLE_BLINK_FADE,
+  LED_SINGLE_BLINK_FADE,
+  LED_BREATHING
+};
+
+
+
+
 void initilize_chikobot(void);
 
 float readBatteryVoltage(void);

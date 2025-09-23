@@ -3,10 +3,9 @@
 #include <chikobot.h>
 #include <chiko_wifi.h>
 
-#define LED_PIN 16
-#define BOST_CONVERTER_ENABLE_PIN 17
-#define CHARGE_INDICATOR_PIN 36
-#define STANDBY_PIN 39
+
+
+
 
 
 void setup() {
@@ -51,19 +50,27 @@ void loop() {
   // Serial.println("\t --- ");
   // broadcastData("12355");
   // delay(1000);
-  static int counter = 0;
-  counter = random(0, 100);
-  if (counter == 50)
-  {
-    eyes_blink(12);
-  }else if (counter == 25)
-  {
-    eyes_move_right_big();
-  }else if (counter == 75)
-  {
-    eyes_move_left_big();
-  }
+
+  // static int counter = 0;
+  // counter = random(0, 100);
+  // if (counter == 50)
+  // {
+  //   eyes_blink(12);
+  // }else if (counter == 25)
+  // {
+  //   eyes_move_right_big();
+  // }else if (counter == 75)
+  // {
+  //   eyes_move_left_big();
+  // }else if (counter == 10)
+  // {
+  //   eyes_happy();
+  // }else if (counter == 90)
+  // {
+  //   eyes_sleep(); 
+  // }
+  
     
-  eyes_reset(true);
+  // eyes_reset(true);
   
 }

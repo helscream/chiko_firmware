@@ -1,7 +1,10 @@
 
 #include "chikobot.h"
 
-#define BUTTON_PIN 33
+#define BUTTON_PIN  33
+#define LED_PIN     17
+#define CHARGE_INDICATOR_PIN 16
+#define FUNCTION_BUTTON_PIN 0
 
 // Battery monitoring constants
 #define BATTERY_VOLTAGE_PIN 34 // Pin to read battery voltage (ADC1_6)
@@ -18,13 +21,16 @@ BMA250 accelrometer;
 // Action object for walking routine.
 // Encapsulates the walking state machine (enter, loop, exit routines)
 
+
+
 // Variables for interrupt and timing
-volatile bool buttonLow = false;
-volatile unsigned long buttonLowStart = 0;
-volatile bool actionReady = false;
+//volatile bool actionReady = false;
 
 void goToDeepSleep() {
+  Serial.println("Disabling joints for deep sleep.");
+  disable_joints();
   Serial.println("Going to deep sleep...");
+  delay(100); // Short delay to ensure serial message is sent
   esp_sleep_enable_ext0_wakeup((gpio_num_t)BUTTON_PIN, HIGH); // Wake up when pin is HIGH
   esp_deep_sleep_start();
 }
@@ -34,35 +40,97 @@ void goToLightSleep() {
   esp_sleep_enable_ext0_wakeup((gpio_num_t)BUTTON_PIN, HIGH); // 1 = wake on HIGH
   esp_light_sleep_start();
   Serial.println("Woke up from light sleep.");
+  setFaceEmoji(NORMAL);
 }
 
 void ButtonPressTask(void* parameter) {
   // If button is held LOW, check how long
+  unsigned long buttonLowStart = millis();
   while (true) {
-	if (buttonLow) {
-		if (millis() - buttonLowStart >= HOLD_TIME_MS && !actionReady) {
-			actionReady = true;
-      Serial.println("Ready to sleep ... You can release the button.");
-      while(digitalRead(BUTTON_PIN) == HIGH) {
-        // Wait for button release to avoid immediate wake-up
-        delay(100);
+    if (digitalRead(BUTTON_PIN) == HIGH) {
+      if (millis() - buttonLowStart >= HOLD_TIME_MS) {
+        Serial.println("Ready to sleep ... You can release the button.");
+        setFaceEmoji(SLEEPY);
+        
+        while(digitalRead(BUTTON_PIN) == HIGH) {
+          // Wait for button release to avoid immediate wake-up
+          delay(100);
+        }
+        Serial.println("ZZZzzzz...!");
+        DisplayPage(OFF);
+        goToDeepSleep();
+      }else{
+        setFaceEmoji(HAPPY);
       }
-      delay(100); // Small delay to ensure button is fully released
-      Serial.println("ZZZzzzz...!");
-      goToLightSleep();
-		}
-	} else {
-		actionReady = false; // Reset when button released
-    vTaskDelete(NULL); // Delete this task when button is released
-	}
-  vTaskDelay(100 / portTICK_PERIOD_MS); // Check every 100ms  
+    } else {
+      setFaceEmoji(NORMAL);
+      delay(1); // Before deleting task, give time for face emoji to update
+      vTaskDelete(NULL); // Delete this task when button is released
+    }
+    delay(10); // Polling delay
+  }
 }
+
+void FunctionButtonTask(void* parameter) {
+  // If function button is held LOW, check how long
+  unsigned long buttonLowStart = millis();
+  while (true) {
+    if (digitalRead(FUNCTION_BUTTON_PIN) == LOW) {
+      Serial.println("Function button pressed.");
+      // if(areJointsActive()){
+      //   Serial.println("Disabling joints.");
+      //   disable_joints();
+      // } else {
+      //   Serial.println("Enabling joints.");
+      //   enable_joints();
+      // }
+    } else {
+      vTaskDelete(NULL); // Delete this task when button is released
+    }
+    delay(1000); // Polling delay
+  }
+}
+
+void IRAM_ATTR handleButtonInterrupt() {
+	// Called when button state changes
+	if (digitalRead(BUTTON_PIN) == HIGH) {
+    // Button pressed
+    xTaskCreatePinnedToCore(
+      ButtonPressTask,   // Function to implement the task
+      "ButtonPressTask", // Name of the task
+      10000,             // Stack size in words
+      NULL,             // Task input parameter
+      1,                // Priority of the task
+      NULL,             // Task handle
+      1);               // Core where the task should run
+	}
+}
+
+void IRAM_ATTR handleFunctionButtonInterrupt() {
+  // Called when function button state changes
+  if (digitalRead(FUNCTION_BUTTON_PIN) == LOW) {
+    xTaskCreatePinnedToCore(
+      FunctionButtonTask,   // Function to implement the task
+      "FunctionButtonTask", // Name of the task
+      10000,             // Stack size in words
+      NULL,             // Task input parameter
+      1,                // Priority of the task
+      NULL,             // Task handle
+      1);               // Core where the task should run
+  }
 }
 
 void batteryMonitorTask(void* parameter) {
   Serial.println("Battery monitoring started.");
+  pinMode(CHARGE_INDICATOR_PIN, INPUT_PULLUP);
   while (true) {
     float voltage = readBatteryVoltage();
+    // Optionally, check charging status
+    if (digitalRead(CHARGE_INDICATOR_PIN) == LOW) {
+      Serial.println("Charging...");
+    } else {
+      Serial.println("Not Charging.");
+    }
     Serial.print("Battery Voltage: ");
     Serial.print(voltage);
     Serial.println(" V");
@@ -74,37 +142,82 @@ void batteryMonitorTask(void* parameter) {
   }
 }
 
-void IRAM_ATTR handleButtonInterrupt() {
-	// Called when button state changes
-	if (digitalRead(BUTTON_PIN) == HIGH) {
-		// Button just went LOW
-		buttonLowStart = millis();
-		buttonLow = true;
-    xTaskCreatePinnedToCore(
-      ButtonPressTask,   // Function to implement the task
-      "ButtonPressTask", // Name of the task
-      10000,             // Stack size in words
-      NULL,             // Task input parameter
-      1,                // Priority of the task
-      NULL,             // Task handle
-      0);               // Core where the task should run
-	} else {
-		// Button released
-		buttonLow = false;
-		buttonLowStart = 0;
-	}
+
+
+void statusLedTask(void* parameter) {
+  LEDStates currentState = LED_BREATHING;
+  ledcAttachChannel(LED_PIN, 5000, 8, 7); // 5 kHz PWM, 8-bit resolution
+  while (true) {
+    switch (currentState)
+    {
+    case LED_OFF:
+      /* code */
+      ledcWrite(LED_PIN, 0);
+      break;
+    case LED_ON_SOLID:
+      ledcWrite(LED_PIN, 255);
+      break;
+    case LED_DOUBLE_BLINK_FADE:
+      ledcWrite(LED_PIN, 255);
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+      ledcWrite(LED_PIN, 0);
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+      ledcWrite(LED_PIN, 255);
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+      ledcWrite(LED_PIN, 0);
+      vTaskDelay(700 / portTICK_PERIOD_MS);
+      break;
+    case LED_SINGLE_BLINK_FADE:
+      ledcWrite(LED_PIN, 255);
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+      ledcWrite(LED_PIN, 0);
+      vTaskDelay(900 / portTICK_PERIOD_MS);
+      break;
+    case LED_BREATHING:
+      for (int brightness = 0; brightness <= 255; brightness += 5) {
+        ledcWrite(LED_PIN, brightness);
+        vTaskDelay(30 / portTICK_PERIOD_MS);
+      }
+      for (int brightness = 255; brightness >= 0; brightness -= 5) {
+        ledcWrite(LED_PIN, brightness);
+        vTaskDelay(30 / portTICK_PERIOD_MS);
+      }
+      break;
+    default:
+      break;
+    }
+    vTaskDelay(1000 / portTICK_PERIOD_MS); // Small delay to avoid watchdog reset
+  }
+  vTaskDelete(NULL); // Delete this task if it ever exits (it won't)
 }
+
+void showInfoOnFace(){
+  display_clearDisplay();
+  facePrint("ChikoBot v1.0", 0, 0);
+  facePrint("www.chikodroid.com", 0, 10);
+  facePrint("", 0, 20);
+  facePrint("IP: 192.168.3.2", 0, 30);
+  float voltage = readBatteryVoltage();
+  
+  facePrint("4.3 V", 0, 40);
+} 
+
 
 
 void initilize_chikobot(void){
-    pinMode(BUTTON_PIN, INPUT_PULLDOWN);
+  pinMode(BUTTON_PIN, INPUT_PULLDOWN);
 	attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), handleButtonInterrupt, CHANGE);
-
+  // Check if woke from deep sleep
 	if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {
 		Serial.println("Hello Again!");
 	} else {
 		Serial.println("Hello.");
 	}
+  // Function button pin setup
+  pinMode(FUNCTION_BUTTON_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(FUNCTION_BUTTON_PIN), handleFunctionButtonInterrupt, FALLING);
+  // Setup charge indicator pin
+  pinMode(CHARGE_INDICATOR_PIN, INPUT_PULLUP);
     initialize_face();
     Serial.println("Face Initialized.");
     // Setup battery monitoring
@@ -119,6 +232,18 @@ void initilize_chikobot(void){
       1,                // Priority of the task
       NULL,             // Task handle
       1);               // Core where the task should run
+    // Setup status LED task
+    xTaskCreatePinnedToCore(
+      statusLedTask,   // Function to implement the task
+      "StatusLedTask", // Name of the task
+      1000,             // Stack size in words
+      NULL,             // Task input parameter
+      1,                // Priority of the task
+      NULL,             // Task handle
+      1);               // Core where the task should run
+
+    
+
     initialize_Wifi(); 
     Serial.println("WiFi Initialized.");
 
@@ -126,6 +251,31 @@ void initilize_chikobot(void){
     Serial.println("Joints Initialized.");
     accelrometer.initialize();
     Serial.println("Joints and Accelerometer Initialized.");
+    
+    accelrometer.attachDoubleTapToAction(TOP, [](){
+      Serial.println("Top face double-tapped.");
+      // if(areJointsActive()){
+      //   Serial.println("Disabling joints.");
+      //   disable_joints();
+      // } else {
+      //   Serial.println("Enabling joints.");
+      //   enable_joints();
+      // }
+      DisplayPage(FACE);
+
+    });
+
+    accelrometer.attachDoubleTapToAction(LEFT, [](){
+      Serial.println("Left face double-tapped.");
+      setFaceEmoji(LOOK_LEFT_BIG);
+      delay(100);
+      DisplayPage(LEFTPAGE);
+    });
+
+    accelrometer.attachDoubleTapToAction(RIGHT, [](){
+      Serial.println("Right face double-tapped.");
+      setFaceEmoji(LOOK_RIGHT_BIG);
+    });
     Serial.println("ChikoBot Initialized!");
 }
 
@@ -147,3 +297,5 @@ float readBatteryVoltage(void) {
   float voltage = avg * (3.3 / 4095.0) * (float)VOLTAGE_DIVIDER_RATIO;
   return voltage;
 }
+
+

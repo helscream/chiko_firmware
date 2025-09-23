@@ -8,6 +8,8 @@ public:
     ESP32Servo();
 
     void attach(uint8_t pin, uint8_t channel);
+    void detach(void);
+    void reAttach(void);
     void write(int angle);
     void writeMicroseconds(uint16_t microseconds);
     int getAngle() const;

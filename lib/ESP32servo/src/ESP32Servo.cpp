@@ -33,6 +33,14 @@ void ESP32Servo::attach(uint8_t pin, uint8_t channel) {
     ledcAttach(_pin, _frequencyHz, _resolutionBits);
 }
 
+void ESP32Servo::detach(void){
+    ledcDetach(_pin);
+}
+
+void ESP32Servo::reAttach(void){
+    ledcAttach(_pin, _frequencyHz, _resolutionBits);
+}
+
 void ESP32Servo::writeMicroseconds(uint16_t microseconds) {
     // Check if the servo was attached
     if (_pin == 255 || _channel == 255) return;

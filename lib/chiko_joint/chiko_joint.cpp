@@ -177,10 +177,22 @@ bool rightJointsStatus(void) {
 
 void enable_joints(void) {
   digitalWrite(SERVO_ENABLE_PIN, HIGH);
+  LFJ->enable_joint();
+  LLJ->enable_joint();
+  RFJ->enable_joint();
+  RLJ->enable_joint();
 }
 
 void disable_joints(void) {
   digitalWrite(SERVO_ENABLE_PIN, LOW);
+  LFJ->disable_joint();
+  LLJ->disable_joint();
+  RFJ->disable_joint();
+  RLJ->disable_joint();
+}
+
+bool areJointsActive(void){
+  return digitalRead(SERVO_ENABLE_PIN);
 }
 
 
@@ -256,6 +268,14 @@ void Joint::setToZero(void) {
   ServoWrite(JointAngle);
 }
 
+
+void Joint::disable_joint(void){
+  JointServo.detach();
+}
+
+void Joint::enable_joint(void){
+  JointServo.reAttach();
+}
 /*
     Initilize the Joint
     */

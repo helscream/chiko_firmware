@@ -194,6 +194,10 @@ class Joint{
          * @param ButtonInput The input value from the button.
          */
         void attachInput(bool ButtonInput);
+
+        void disable_joint(void);
+
+        void enable_joint(void);
 };
 
 
@@ -216,6 +220,8 @@ void enable_joints(void);
  * @brief Disable all joints (power off or deactivate servos).
  */
 void disable_joints(void);
+
+bool areJointsActive(void);
 
 /**
  * @brief Run the joint calibration routine for all joints.

@@ -12,8 +12,14 @@
 #include <string>
 #include <deque>
 #define MAX_LOG_LINES 6 // Number of lines to show (depends on font size and screen height)
+
+void (*LeftPageSetup)() = NULL, (*RightPageSetup)() = NULL,
+     (*LeftPageLoop)() = NULL, (*RightPageLoop)() = NULL;
+     
 static std::deque<std::string> message_log;
 
+volatile FaceEmoji CURRENT_FACE_EMOJI = NORMAL;
+volatile Page CURRENT_PAGE = FACE;
 
 // Color definitions for display
 int COLOR_WHITE = 1;
@@ -368,13 +374,10 @@ void eyes_blink(int speed) {
  */
 void eyes_sleep() {
   eyes_reset(false);
-
   left_eye_height = 2;
   left_eye_width = ref_eye_width;
   right_eye_height = 2;
   right_eye_width = ref_eye_width;
-
-
   corner_radius = 0;
   draw_eyes(true);
 }
@@ -557,9 +560,6 @@ void eyes_move_big(int direction) {
  * @param animation_index Index of the animation to launch.
  */
 void launch_animation_with_index(int animation_index) {
-
-
-
   if (animation_index > max_animation_index) {
     animation_index = 8;
   }
@@ -611,7 +611,6 @@ void launch_animation_with_index(int animation_index) {
  * @brief Demo/test function for face emoji animations. Cycles animations in demo mode or responds to serial commands.
  */
 void testFaceEmoji() {
-
   if (demo_mode == 1) {
     // cycle animations
     launch_animation_with_index(current_animation_index++);
@@ -619,7 +618,6 @@ void testFaceEmoji() {
       current_animation_index = 0;
     }
   }
-
 
   //send "Ax" for animation x  (ex. A2 will launch animation 2)
   if (Serial.available()) {
@@ -639,46 +637,7 @@ void testFaceEmoji() {
   }
 }
 
-/**
- * @brief FreeRTOS task handle for running face emoji animations and handling serial commands.
- */
-TaskHandle_t FaceEmojiTask_Handle;
 
-/**
- * @brief FreeRTOS task for running face emoji animations and handling serial commands.
- */
-void FaceEmojiTask(void *parameter) {
-  Serial.print("Task2 running on core ");
-  Serial.println(xPortGetCoreID());
-  for (;;) {
-
-    if (demo_mode == 1) {
-      // cycle animations
-      launch_animation_with_index(current_animation_index++);
-      if (current_animation_index > max_animation_index) {
-        current_animation_index = 0;
-      }
-    }
-
-
-    //send "Ax" for animation x  (ex. A2 will launch animation 2)
-    if (Serial.available()) {
-      String data = Serial.readString();
-      data.trim();
-      char cmd = data[0];
-
-      if (cmd == 'A') {
-        demo_mode = 0;
-
-        String arg = data.substring(1, data.length());
-        int anim = arg.toInt();
-        launch_animation_with_index(anim);
-        Serial.print(cmd);
-        Serial.print(arg);
-      }
-    }
-  }
-}
 
 /**
  * @brief Initializes the face emoji system, display, and starts the animation task.
@@ -689,15 +648,233 @@ void initialize_face() {
   u8g2_initialized = true;
 
   //clear screen and display startup info.
-  display_clearDisplay();
-  eyes_sleep();
-  u8g2.setFont(u8g2_font_ncenB10_tr);
-  u8g2.drawStr(0, 10, "CHIKO");
-
-  display_display();
-
-  // Create FaceEmojiTask on core 1
-  // xTaskCreatePinnedToCore(
-  //   FaceEmojiTask, "FaceEmojiTask", 10000, NULL, 1, &FaceEmojiTask_Handle, 1);
+  display_OFF();
+  setFaceEmoji(NORMAL);
+  DisplayPage(FACE);
 }
+
+void PAGE_FaceEmojiTask(void *parameter){
+  while(CURRENT_PAGE == FACE){
+    switch(CURRENT_FACE_EMOJI){
+      case WAKEUP:
+        launch_animation_with_index(0);
+        CURRENT_FACE_EMOJI = NORMAL; 
+        break;
+      case RESET:
+        launch_animation_with_index(1);
+        CURRENT_FACE_EMOJI = NORMAL; 
+        break;
+      case LOOK_RIGHT_BIG:
+        launch_animation_with_index(3);
+        CURRENT_FACE_EMOJI = NORMAL; 
+        break;
+      case LOOK_LEFT_BIG:
+        launch_animation_with_index(2);
+        CURRENT_FACE_EMOJI = NORMAL; 
+        break;
+      case BLINK_LONG:
+        launch_animation_with_index(4);
+        CURRENT_FACE_EMOJI = NORMAL; 
+        break;
+      case BLINK_SHORT:
+        launch_animation_with_index(5);
+        CURRENT_FACE_EMOJI = NORMAL; 
+        break;
+      case HAPPY:
+        launch_animation_with_index(6);
+        break;
+      case SLEEPY:
+        launch_animation_with_index(7);
+        break;
+      case IDLE_SACCADE:
+        launch_animation_with_index(8);
+        break;
+      case NORMAL:
+        if (random(0, 1000) > 950) {
+          launch_animation_with_index(5); // Occasional short blink
+        } else {
+          launch_animation_with_index(8); // Default to reset (normal) position
+        }
+        break;
+      default:
+        break;
+    }
+  vTaskDelay(50 / portTICK_PERIOD_MS); // Sleep briefly to avoid busy loop
+  }
+  vTaskDelete(NULL); // Delete Task 
+}
+
+
+
+// ─── Draw Clock ────────────────────────────────────────────────────────────────
+void drawClock(struct tm* t) {
+  // Build time with blinking colon
+  bool colonOn = (millis() / 1000) % 2;
+  char timeStr[6];  // "HH:MM"
+  snprintf(timeStr, sizeof(timeStr), "%02d%c%02d",
+           t->tm_hour, colonOn ? ':' : ':', t->tm_min);
+
+  // Seconds (top-right, small)
+  char secStr[3];
+  snprintf(secStr, sizeof(secStr), "%02d", t->tm_sec);
+
+  // Date strings (long and fallback short)
+  char dateLong[24];   // e.g., "Tue 23 Sep"
+  strftime(dateLong, sizeof(dateLong), "%a %d %b", t);
+
+  char dateShort[12];  // e.g., "23/09"
+  strftime(dateShort, sizeof(dateShort), "%d/%m", t);
+
+  u8g2.clearBuffer();
+
+  // --- Seconds (top-right) ---
+  u8g2.setFont(u8g2_font_7x13B_tf);
+  int sec_w = u8g2.getUTF8Width(secStr);
+  u8g2.drawUTF8(57, 12, secStr);
+
+  // --- Big time (center) ---
+  u8g2.setFont(u8g2_font_logisoso42_tn);
+  int time_w = u8g2.getUTF8Width(timeStr);
+  u8g2.drawUTF8((128 - time_w) / 2, 50, timeStr);
+
+  // --- Date (bottom centered) with auto-fit ---
+  // Try 6x12, then 5x8; if still too wide, use short date.
+  const int maxW = 128 - 4; // keep tiny margins
+  const char* textToDraw = dateLong;
+
+  // Try 6x12
+  u8g2.setFont(u8g2_font_6x12_tf);
+  int w = u8g2.getUTF8Width(textToDraw);
+
+  if (w > maxW) {
+    // Try smaller font with long date
+    u8g2.setFont(u8g2_font_5x8_tf);
+    w = u8g2.getUTF8Width(textToDraw);
+
+    if (w > maxW) {
+      // Use short date with the small font
+      textToDraw = dateShort;
+      w = u8g2.getUTF8Width(textToDraw);
+    }
+  }
+
+  // Draw date at the very bottom (baseline at y=63 fits safely on 0..63)
+  int x = (128 - w) / 2;
+  u8g2.drawUTF8(x, 60, textToDraw);
+
+  u8g2.sendBuffer();
+}
+
+
+
+void PAGE_LeftTask(void *parameter){
+  // if (LeftPageLoop == NULL){
+  //   LeftPageLoop();
+  // }else{
+    
+ 
+
+  // }
+   // Timezone offset (e.g., +2h = 7200)
+  const long gmtOffset_sec = 7200;
+  const int daylightOffset_sec = 0;
+      
+
+  configTime(gmtOffset_sec, daylightOffset_sec, "pool.ntp.org");
+
+  
+  while(CURRENT_PAGE == LEFTPAGE){
+    //LeftPageSetup();
+    
+    time_t now = time(nullptr);
+    struct tm t;
+    localtime_r(&now, &t);
+    drawClock(&t);
+
+    vTaskDelay(500 / portTICK_PERIOD_MS); // Sleep briefly to avoid busy loop
+  }
+  vTaskDelete(NULL);
+}
+
+void PAGE_RightTask(void *parameter){
+  RightPageLoop();
+  while(CURRENT_PAGE == RIGHTPAGE){
+    RightPageSetup();
+    vTaskDelay(50 / portTICK_PERIOD_MS); // Sleep briefly to avoid busy loop
+  }
+  vTaskDelete(NULL);
+}
+
+void DisplayPage(Page PageToDisplay){
+  CURRENT_PAGE = PageToDisplay;
+  switch (CURRENT_PAGE)
+  {
+  case LEFTPAGE:
+    // Initialize Face Emoji Task
+    xTaskCreatePinnedToCore(
+      PAGE_LeftTask,   // Function to implement the task
+      "LeftPageTask",  // Name of the task
+      10000,           // Stack size in words
+      NULL,            // Task input parameter
+      2,               // Priority of the task
+      NULL,            // Task handle
+      1);              // Core where the task should run
+    break;
+  case FACE:
+    // Initialize Face Emoji Task
+    xTaskCreatePinnedToCore(
+      PAGE_FaceEmojiTask, // Function to implement the task
+      "FaceEmojiTask",    // Name of the task
+      10000,              // Stack size in words
+      NULL,               // Task input parameter
+      2,                  // Priority of the task
+      NULL,               // Task handle
+      1);                 // Core where the task should run
+    break;
+  case RIGHTPAGE:
+    // Initialize Face Emoji Task
+    xTaskCreatePinnedToCore(
+      PAGE_RightTask,  // Function to implement the task
+      "RightPageTask", // Name of the task
+      10000,           // Stack size in words
+      NULL,            // Task input parameter
+      2,               // Priority of the task
+      NULL,            // Task handle
+      1);              // Core where the task should run
+    break;
+  case OFF:
+      display_OFF();
+      break;
+  default:
+      Serial.println("Page Not found!");
+    break;
+  }
+}
+
+void AttachPageTasks(Page TargetPage, void (*setup)(),void (*loop)()){
+  switch (TargetPage)
+  {
+  case LEFTPAGE:
+    LeftPageLoop = loop;
+    LeftPageSetup = setup;
+    break;
+  case RIGHTPAGE:
+    RightPageLoop = loop;
+    RightPageSetup = setup;
+    break;
+  default:
+    Serial.println("Page not found: No task assigned!");
+    break;
+  }
+}
+
+void display_OFF(void){
+   display_clearDisplay();
+   display_display();
+}
+
+void setFaceEmoji(FaceEmoji TargetFaceEmoji){
+  CURRENT_FACE_EMOJI = TargetFaceEmoji;
+}
+
 
