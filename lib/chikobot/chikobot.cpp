@@ -205,6 +205,8 @@ void showInfoOnFace(){
 
 
 void initilize_chikobot(void){
+  Serial.begin(115200);
+  Serial.println("Chiko Here!");
   pinMode(BUTTON_PIN, INPUT_PULLDOWN);
 	attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), handleButtonInterrupt, CHANGE);
   // Check if woke from deep sleep
