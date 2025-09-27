@@ -132,25 +132,28 @@ void initialize_joints(Joint *LeftFootJoint, Joint *LeftLegJoint, Joint *RightFo
 
   Serial.begin(115200);
   pinMode(SERVO_ENABLE_PIN, OUTPUT);
+  digitalWrite(SERVO_ENABLE_PIN, LOW);
   // Initilizing Joints
-
+  delay(100);
+  digitalWrite(SERVO_ENABLE_PIN, HIGH);
+  delay(100);
   LLJ = LeftLegJoint;
   LFJ = LeftFootJoint;
   RLJ = RightLegJoint;
   RFJ = RightFootJoint;
 
   LFJ->init_joint(LEFTFOOT_PIN, 100, LF_OFFSET);
-  LLJ->init_joint(LEFTLEG_PIN, 100, LL_OFFSET);
-  RFJ->init_joint(RIGHTFOOT_PIN, 100, RF_OFFSET);
-  RLJ->init_joint(RIGHTLEG_PIN, 100, RL_OFFSET);
-  loadJointsOffsets();
-  enable_joints();
-  // Setting the joints to zero
-  RLJ->setToZero();
-  RFJ->setToZero();
-  LLJ->setToZero();
   LFJ->setToZero();
-
+  delay(100);
+  LLJ->init_joint(LEFTLEG_PIN, 100, LL_OFFSET);
+  LLJ->setToZero();
+  delay(100);
+  RFJ->init_joint(RIGHTFOOT_PIN, 100, RF_OFFSET);
+  RFJ->setToZero();
+  delay(100);
+  RLJ->init_joint(RIGHTLEG_PIN, 100, RL_OFFSET);
+  RLJ->setToZero();
+  loadJointsOffsets();
 }
 
 void waitTillAllJointsAvailable(void){
@@ -176,19 +179,21 @@ bool rightJointsStatus(void) {
 }
 
 void enable_joints(void) {
-  digitalWrite(SERVO_ENABLE_PIN, HIGH);
   LFJ->enable_joint();
+  delay(100);
   LLJ->enable_joint();
+  delay(100);
   RFJ->enable_joint();
+  delay(100);
   RLJ->enable_joint();
 }
 
 void disable_joints(void) {
-  digitalWrite(SERVO_ENABLE_PIN, LOW);
   LFJ->disable_joint();
   LLJ->disable_joint();
   RFJ->disable_joint();
   RLJ->disable_joint();
+  // digitalWrite(SERVO_ENABLE_PIN, LOW);
 }
 
 bool areJointsActive(void){
@@ -270,10 +275,14 @@ void Joint::setToZero(void) {
 
 
 void Joint::disable_joint(void){
+  digitalWrite(SERVO_ENABLE_PIN, LOW);
   JointServo.detach();
+
 }
 
 void Joint::enable_joint(void){
+  digitalWrite(SERVO_ENABLE_PIN, HIGH);
+  delay(100);
   JointServo.reAttach();
 }
 /*
@@ -286,7 +295,11 @@ void Joint::init_joint(int JointPort, float speed, float offset) {
   ServoWrite(JointAngle);
   JointSpeed = speed;
   JointOffset = offset;
-  xTaskCreate(processJointMovement, "Joint Movement Task", 5000, this, JOINT_TASK_PRIORITY, NULL);
+  // For unique task names
+  char taskName[24];
+  sprintf(taskName,"Joint Movement Task:%d",JointPort);
+  // Creating indipendent tasks
+  xTaskCreate(processJointMovement, taskName, 5000, this, JOINT_TASK_PRIORITY, NULL);
 }
 
 /*

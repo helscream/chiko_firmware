@@ -77,13 +77,13 @@ void FunctionButtonTask(void* parameter) {
   while (true) {
     if (digitalRead(FUNCTION_BUTTON_PIN) == LOW) {
       Serial.println("Function button pressed.");
-      // if(areJointsActive()){
-      //   Serial.println("Disabling joints.");
-      //   disable_joints();
-      // } else {
-      //   Serial.println("Enabling joints.");
-      //   enable_joints();
-      // }
+      if(areJointsActive()){
+        Serial.println("Disabling joints.");
+        disable_joints();
+      } else {
+        Serial.println("Enabling joints.");
+        enable_joints();
+      }
     } else {
       vTaskDelete(NULL); // Delete this task when button is released
     }
@@ -275,6 +275,8 @@ void initilize_chikobot(void){
     accelrometer.attachDoubleTapToAction(RIGHT, [](){
       Serial.println("Right face double-tapped.");
       setFaceEmoji(LOOK_RIGHT_BIG);
+      delay(100);
+      DisplayPage(RIGHTPAGE);
     });
     Serial.println("ChikoBot Initialized!");
 }

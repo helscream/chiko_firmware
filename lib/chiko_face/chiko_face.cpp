@@ -9,6 +9,7 @@
  */
 
 #include "chiko_face.h"
+#include  "chiko_displayUI.h"
 #include <string>
 #include <deque>
 #define MAX_LOG_LINES 6 // Number of lines to show (depends on font size and screen height)
@@ -771,9 +772,7 @@ void PAGE_LeftTask(void *parameter){
   // if (LeftPageLoop == NULL){
   //   LeftPageLoop();
   // }else{
-    
- 
-
+  
   // }
    // Timezone offset (e.g., +2h = 7200)
   const long gmtOffset_sec = 7200;
@@ -796,10 +795,20 @@ void PAGE_LeftTask(void *parameter){
   vTaskDelete(NULL);
 }
 
+#include "chiko_icons.h"
 void PAGE_RightTask(void *parameter){
-  RightPageLoop();
+  //RightPageLoop();
+  //DisplayUI ui(u8g2, "ESP32-Omer");
+  display_clearDisplay();
   while(CURRENT_PAGE == RIGHTPAGE){
-    RightPageSetup();
+    //RightPageSetup();
+    // ui.updateDisplay();
+    u8g2.drawBitmap(0, 0, ICON_W/8, ICON_H, pickBatteryIcon(75,HIGH));  // ICON_W/8 == 2
+    u8g2.drawBitmap(16, 0, ICON_W/8, ICON_H, icon_bluetooth_connected);
+    u8g2.drawBitmap(32, 0, ICON_W/8, ICON_H, icon_wifi_nc);
+    u8g2.drawBitmap(48, 0, ICON_W/8, ICON_H, icon_wifi_100);
+    // drawBatteryIcon(u8g2,8,8,3,1);
+    display_display();
     vTaskDelay(50 / portTICK_PERIOD_MS); // Sleep briefly to avoid busy loop
   }
   vTaskDelete(NULL);
