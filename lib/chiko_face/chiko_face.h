@@ -5,6 +5,9 @@
 #include <U8g2lib.h>
 #include <string>
 
+// u8g2 display object for SSD1309 128x64 OLED (hardware SPI)
+U8G2_SSD1309_128X64_NONAME2_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/U8X8_PIN_NONE, /* dc=*/26, /* reset=*/25);
+
 
 enum FaceEmoji {
   WAKEUP,

@@ -9,7 +9,7 @@
  */
 
 #include "chiko_face.h"
-#include  "chiko_displayUI.h"
+//#include  "chiko_displayUI.h"
 #include <string>
 #include <deque>
 #define MAX_LOG_LINES 6 // Number of lines to show (depends on font size and screen height)
@@ -53,10 +53,6 @@ int right_eye_height = ref_eye_height;
 int right_eye_width = ref_eye_width;
 int corner_radius = ref_corner_radius;
 
-
-
-// u8g2 display object for SSD1309 128x64 OLED (hardware SPI)
-U8G2_SSD1309_128X64_NONAME2_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/U8X8_PIN_NONE, /* dc=*/26, /* reset=*/25);
 static bool u8g2_initialized = false;
 
 // --- Message log for scrolling messages ---
@@ -651,7 +647,7 @@ void initialize_face() {
   //clear screen and display startup info.
   display_OFF();
   setFaceEmoji(NORMAL);
-  DisplayPage(FACE);
+  //DisplayPage(FACE);
 }
 
 void PAGE_FaceEmojiTask(void *parameter){

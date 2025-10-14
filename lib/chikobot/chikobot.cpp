@@ -22,7 +22,9 @@ BMA250 accelrometer;
 // Encapsulates the walking state machine (enter, loop, exit routines)
 
 
+U8G2_SSD1309_128X64_NONAME2_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/U8X8_PIN_NONE, /* dc=*/26, /* reset=*/25);
 
+pages ChikoPages;
 // Variables for interrupt and timing
 //volatile bool actionReady = false;
 
@@ -40,7 +42,7 @@ void goToLightSleep() {
   esp_sleep_enable_ext0_wakeup((gpio_num_t)BUTTON_PIN, HIGH); // 1 = wake on HIGH
   esp_light_sleep_start();
   Serial.println("Woke up from light sleep.");
-  setFaceEmoji(NORMAL);
+  // setFaceEmoji(NORMAL);
 }
 
 void ButtonPressTask(void* parameter) {
@@ -50,20 +52,20 @@ void ButtonPressTask(void* parameter) {
     if (digitalRead(BUTTON_PIN) == HIGH) {
       if (millis() - buttonLowStart >= HOLD_TIME_MS) {
         Serial.println("Ready to sleep ... You can release the button.");
-        setFaceEmoji(SLEEPY);
+        // setFaceEmoji(SLEEPY);
         
         while(digitalRead(BUTTON_PIN) == HIGH) {
           // Wait for button release to avoid immediate wake-up
           delay(100);
         }
         Serial.println("ZZZzzzz...!");
-        DisplayPage(OFF);
+        // DisplayPage(OFF);
         goToDeepSleep();
       }else{
-        setFaceEmoji(HAPPY);
+        // setFaceEmoji(HAPPY);
       }
     } else {
-      setFaceEmoji(NORMAL);
+      // setFaceEmoji(NORMAL);
       delay(1); // Before deleting task, give time for face emoji to update
       vTaskDelete(NULL); // Delete this task when button is released
     }
@@ -71,25 +73,7 @@ void ButtonPressTask(void* parameter) {
   }
 }
 
-void FunctionButtonTask(void* parameter) {
-  // If function button is held LOW, check how long
-  unsigned long buttonLowStart = millis();
-  while (true) {
-    if (digitalRead(FUNCTION_BUTTON_PIN) == LOW) {
-      Serial.println("Function button pressed.");
-      if(areJointsActive()){
-        Serial.println("Disabling joints.");
-        disable_joints();
-      } else {
-        Serial.println("Enabling joints.");
-        enable_joints();
-      }
-    } else {
-      vTaskDelete(NULL); // Delete this task when button is released
-    }
-    delay(1000); // Polling delay
-  }
-}
+
 
 void IRAM_ATTR handleButtonInterrupt() {
 	// Called when button state changes
@@ -106,17 +90,48 @@ void IRAM_ATTR handleButtonInterrupt() {
 	}
 }
 
+
+void FunctionButtonTask(void* parameter) {
+  // If function button is held LOW, check how long
+  // unsigned long buttonLowStart = millis();
+  // while (true) {
+  //   if (digitalRead(FUNCTION_BUTTON_PIN) == LOW) {
+  //     Serial.println("Function button pressed.");
+  //     if(areJointsActive()){
+  //       Serial.println("Disabling joints.");
+  //       disable_joints();
+  //     } else {
+  //       Serial.println("Enabling joints.");
+  //       enable_joints();
+  //     }
+  //   } else {
+  //     vTaskDelete(NULL); // Delete this task when button is released
+  //   }
+  //   delay(1000); // Polling delay
+  // }
+  ChikoPages.btnFunctionAction();
+  vTaskDelete(NULL);
+}
+
 void IRAM_ATTR handleFunctionButtonInterrupt() {
   // Called when function button state changes
   if (digitalRead(FUNCTION_BUTTON_PIN) == LOW) {
-    xTaskCreatePinnedToCore(
-      FunctionButtonTask,   // Function to implement the task
-      "FunctionButtonTask", // Name of the task
-      10000,             // Stack size in words
-      NULL,             // Task input parameter
-      1,                // Priority of the task
-      NULL,             // Task handle
-      1);               // Core where the task should run
+    ChikoPages.btnFunctionSelect();
+  }else{
+    ChikoPages.btnFunctionSelect(false);
+
+    static unsigned long lastDebounceTime = 0;
+    if (millis() - lastDebounceTime > DEBOUNCE_TIME_MS) {
+      lastDebounceTime = millis();
+      xTaskCreatePinnedToCore(
+        FunctionButtonTask,   // Function to implement the task
+        "FunctionButtonTask", // Name of the task
+        10000,             // Stack size in words
+        NULL,             // Task input parameter
+        1,                // Priority of the task
+        NULL,             // Task handle
+        1);               // Core where the task should run
+      }
   }
 }
 
@@ -191,18 +206,20 @@ void statusLedTask(void* parameter) {
   vTaskDelete(NULL); // Delete this task if it ever exits (it won't)
 }
 
-void showInfoOnFace(){
-  display_clearDisplay();
-  facePrint("ChikoBot v1.0", 0, 0);
-  facePrint("www.chikodroid.com", 0, 10);
-  facePrint("", 0, 20);
-  facePrint("IP: 192.168.3.2", 0, 30);
-  float voltage = readBatteryVoltage();
+// void showInfoOnFace(){
+//   display_clearDisplay();
+//   facePrint("ChikoBot v1.0", 0, 0);
+//   facePrint("www.chikodroid.com", 0, 10);
+//   facePrint("", 0, 20);
+//   facePrint("IP: 192.168.3.2", 0, 30);
+//   float voltage = readBatteryVoltage();
   
-  facePrint("4.3 V", 0, 40);
-} 
+//   facePrint("4.3 V", 0, 40);
+// } 
 
-
+void test(){
+  Serial.println("Function button action");
+}
 
 void initilize_chikobot(void){
   Serial.begin(115200);
@@ -217,11 +234,10 @@ void initilize_chikobot(void){
 	}
   // Function button pin setup
   pinMode(FUNCTION_BUTTON_PIN, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(FUNCTION_BUTTON_PIN), handleFunctionButtonInterrupt, FALLING);
+  attachInterrupt(digitalPinToInterrupt(FUNCTION_BUTTON_PIN), handleFunctionButtonInterrupt, CHANGE);
   // Setup charge indicator pin
   pinMode(CHARGE_INDICATOR_PIN, INPUT_PULLUP);
-    initialize_face();
-    Serial.println("Face Initialized.");
+    
     // Setup battery monitoring
     analogReadResolution(12); // Set ADC resolution to 12 bits (0-4095)
     analogSetPinAttenuation(BATTERY_VOLTAGE_PIN,ADC_0db); // Set attenuation for full-scale voltage (0-3.3V)
@@ -243,8 +259,19 @@ void initilize_chikobot(void){
       1,                // Priority of the task
       NULL,             // Task handle
       1);               // Core where the task should run
-
     
+    u8g2.begin();
+    
+    pageConfig tempConfig = ChikoPages.getPageConfig(0);
+
+    sprintf(tempConfig.btnFunName,"Toggle");
+    tempConfig.taskBarVisibility = false;
+    tempConfig.btnFunClickAction = &test;
+
+    ChikoPages.setPageConfig(0,tempConfig);
+    
+    ChikoPages.intilize(u8g2,4);
+    /*
 
     initialize_Wifi(); 
     Serial.println("WiFi Initialized.");
@@ -253,6 +280,9 @@ void initilize_chikobot(void){
     Serial.println("Joints Initialized.");
     accelrometer.initialize();
     Serial.println("Joints and Accelerometer Initialized.");
+
+    initialize_face();
+    Serial.println("Face Initialized.");
     
     accelrometer.attachDoubleTapToAction(TOP, [](){
       Serial.println("Top face double-tapped.");
@@ -281,6 +311,8 @@ void initilize_chikobot(void){
       DisplayPage(RIGHTPAGE);
     });
     Serial.println("ChikoBot Initialized!");
+
+    */
 }
 
 
