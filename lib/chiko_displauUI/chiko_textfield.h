@@ -76,7 +76,8 @@ class textfield {
     bool        _cursorVisible = true;
 
     // Font
-    const uint8_t* _font = u8g2_font_6x12_mf; // default to match your button example
+    // const uint8_t* _font = u8g2_font_6x12_mf; // default to match your button example
+    const uint8_t* _font = u8g2_font_5x7_mf; // default to match your button example
     int16_t        _h_text = 0;                  // cached font height
 
     // Internal cache (for layout)

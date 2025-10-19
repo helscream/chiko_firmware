@@ -5,9 +5,6 @@
 #include <U8g2lib.h>
 #include <string>
 
-// u8g2 display object for SSD1309 128x64 OLED (hardware SPI)
-U8G2_SSD1309_128X64_NONAME2_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/U8X8_PIN_NONE, /* dc=*/26, /* reset=*/25);
-
 
 enum FaceEmoji {
   WAKEUP,
@@ -22,19 +19,7 @@ enum FaceEmoji {
   NORMAL
 };
 
-enum Page {
-    LEFTPAGE,
-    FACE,
-    RIGHTPAGE,
-    OFF
-};
 
-
-
-
-void AttachPageTasks(Page TargetPage, void (*setup)(),void (*loop)());
-
-void DisplayPage(Page PageToDisplay);
 
 void display_OFF(void);
 
@@ -135,7 +120,7 @@ void launch_animation_with_index(int animation_index);
 /**
  * @brief Initializes the face emoji system, display, and starts the animation task.
  */
-void initialize_face();
+void initialize_face(U8G2 u8g2);
 
 
 /**

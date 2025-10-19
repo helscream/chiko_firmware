@@ -26,6 +26,43 @@ void saveJointOffsets(void) {
   jointOffsets.end();
 }
 
+float getJointOffset(SelectedJoint JN){
+  switch (JN)
+  {
+  case LEFTFOOT:
+    return LFJ->JointOffset;
+  case LEFTLEG:
+    return LLJ->JointOffset;
+  case RIGHTFOOT:
+    return RFJ->JointOffset;
+  case RIGHTLEG:
+    return RLJ->JointOffset;
+  default:
+    return 0;
+  }
+}
+
+void setJointOffset(SelectedJoint JN,float offset){
+  switch (JN)
+  {
+  case LEFTFOOT:
+    LFJ->JointOffset = offset;
+    break;
+  case LEFTLEG:
+    LLJ->JointOffset = offset;
+    break;
+  case RIGHTFOOT:
+    RFJ->JointOffset = offset;
+    break;
+  case RIGHTLEG:
+    RLJ->JointOffset = offset;
+    break;
+  default:
+    break;
+  }
+  saveJointOffsets();
+}
+
 void jointCalibrationsRoutine(void) {
   Serial.println("Joint Offset calibration!");
   Serial.println("1. Left Foot");

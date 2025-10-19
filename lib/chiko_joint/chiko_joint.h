@@ -5,6 +5,7 @@
 #include <ESP32Servo.h>
 #include <RTOS.h>
 #include <Preferences.h>
+#include <chiko_definations.h>
 
 /*
  Model no: SG90
@@ -62,10 +63,10 @@
 #define STEP_ANGLE          2
 
 // Joint Servo Pins
-#define LEFTLEG_PIN     13
-#define RIGHTLEG_PIN    4
-#define LEFTFOOT_PIN    14
-#define RIGHTFOOT_PIN   5
+#define LEFTLEG_PIN     14
+#define RIGHTLEG_PIN    5
+#define LEFTFOOT_PIN    13
+#define RIGHTFOOT_PIN   4
 
 #define SERVO_ENABLE_PIN 15
 
@@ -75,13 +76,7 @@ enum DIRECTION {
     NEGATIVE
 };
 
-enum SelectedJoint {
-  LEFTFOOT,
-  RIGHTFOOT,
-  LEFTLEG,
-  RIGHTLEG,
-  NONE_SELECTED
-};
+
 
 
 #define LF_OFFSET (float)0
@@ -270,5 +265,7 @@ void setAllJointsBaseSpeed(float BaseSpeed);
  */
 void waitTillAllJointsAvailable(void);
 
+float getJointOffset(SelectedJoint JN);
 
+void setJointOffset(SelectedJoint JN, float offset);
 #endif

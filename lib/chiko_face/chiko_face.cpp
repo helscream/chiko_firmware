@@ -9,18 +9,18 @@
  */
 
 #include "chiko_face.h"
-//#include  "chiko_displayUI.h"
+#include  "chiko_definations.h"
 #include <string>
 #include <deque>
+
 #define MAX_LOG_LINES 6 // Number of lines to show (depends on font size and screen height)
 
-void (*LeftPageSetup)() = NULL, (*RightPageSetup)() = NULL,
-     (*LeftPageLoop)() = NULL, (*RightPageLoop)() = NULL;
+U8G2 _display;
      
 static std::deque<std::string> message_log;
 
 volatile FaceEmoji CURRENT_FACE_EMOJI = NORMAL;
-volatile Page CURRENT_PAGE = FACE;
+
 
 // Color definitions for display
 int COLOR_WHITE = 1;
@@ -98,18 +98,18 @@ void facePrint(const std::string &message, uint8_t font_size, bool clear) {
   }
   // Select font based on font_size
   switch (font_size) {
-    case 8: u8g2.setFont(u8g2_font_ncenB08_tr); break;
-    case 10: u8g2.setFont(u8g2_font_ncenB10_tr); break;
-    case 12: u8g2.setFont(u8g2_font_ncenB12_tr); break;
-    case 14: u8g2.setFont(u8g2_font_ncenB14_tr); break;
-    case 18: u8g2.setFont(u8g2_font_ncenB18_tr); break;
-    case 24: u8g2.setFont(u8g2_font_ncenB24_tr); break;
-    default: u8g2.setFont(u8g2_font_ncenB10_tr); break;
+    case 8: _display.setFont(u8g2_font_ncenB08_tr); break;
+    case 10: _display.setFont(u8g2_font_ncenB10_tr); break;
+    case 12: _display.setFont(u8g2_font_ncenB12_tr); break;
+    case 14: _display.setFont(u8g2_font_ncenB14_tr); break;
+    case 18: _display.setFont(u8g2_font_ncenB18_tr); break;
+    case 24: _display.setFont(u8g2_font_ncenB24_tr); break;
+    default: _display.setFont(u8g2_font_ncenB10_tr); break;
   }
-  if (clear) u8g2.clearBuffer();
-  u8g2.setDrawColor(COLOR_WHITE);
+  if (clear) _display.clearBuffer();
+  _display.setDrawColor(COLOR_WHITE);
   // Calculate line height for vertical spacing
-  int line_height = u8g2.getMaxCharHeight() + 2;
+  int line_height = _display.getMaxCharHeight() + 2;
   int y = line_height; // Start at first line
   // Draw each message in the log, wrapping long lines
   for (const auto& msg : message_log) {
@@ -122,20 +122,20 @@ void facePrint(const std::string &message, uint8_t font_size, bool clear) {
       int w = 0;
       while (end < len) {
         std::string sub = msg.substr(start, end - start + 1);
-        w = u8g2.getUTF8Width(sub.c_str());
+        w = _display.getUTF8Width(sub.c_str());
         if (w > SCREEN_WIDTH) break;
         end++;
       }
       if (end == start) end++; // Always print at least one character
       std::string line = msg.substr(start, end - start);
-      u8g2.drawUTF8(x, y, line.c_str()); // Draw the line
+      _display.drawUTF8(x, y, line.c_str()); // Draw the line
       y += line_height;
       if (y > SCREEN_HEIGHT) break;
       start = end;
     }
     if (y > SCREEN_HEIGHT) break;
   }
-  u8g2.sendBuffer(); // Update the display
+  _display.sendBuffer(); // Update the display
 }
 
 void facePrint(const int number, uint8_t font_size, bool clear) {
@@ -168,31 +168,31 @@ void facePrintMiddle(const std::string &text, bool clear, uint8_t font_size) {
   // Select font based on font_size parameter
   switch (font_size) {
     case 8:
-      u8g2.setFont(u8g2_font_ncenB08_tr); // 8pt font
+      _display.setFont(u8g2_font_ncenB08_tr); // 8pt font
       break;
     case 10:
-      u8g2.setFont(u8g2_font_ncenB10_tr); // 10pt font
+      _display.setFont(u8g2_font_ncenB10_tr); // 10pt font
       break;
     case 12:
-      u8g2.setFont(u8g2_font_ncenB12_tr); // 12pt font
+      _display.setFont(u8g2_font_ncenB12_tr); // 12pt font
       break;
     case 14:
-      u8g2.setFont(u8g2_font_ncenB14_tr); // 14pt font
+      _display.setFont(u8g2_font_ncenB14_tr); // 14pt font
       break;
     case 18:
-      u8g2.setFont(u8g2_font_ncenB18_tr); // 18pt font
+      _display.setFont(u8g2_font_ncenB18_tr); // 18pt font
       break;
     case 24:
-      u8g2.setFont(u8g2_font_ncenB24_tr); // 24pt font
+      _display.setFont(u8g2_font_ncenB24_tr); // 24pt font
       break;
     default:
-      u8g2.setFont(u8g2_font_ncenB08_tr); // Default to 8pt font
+      _display.setFont(u8g2_font_ncenB08_tr); // Default to 8pt font
       break;
   }
   if (clear) {
-    u8g2.clearBuffer();
+    _display.clearBuffer();
   }
-  u8g2.setDrawColor(COLOR_WHITE);
+  _display.setDrawColor(COLOR_WHITE);
 
   // Word wrap: split text into lines that fit within SCREEN_WIDTH
   std::vector<std::string> lines;
@@ -204,7 +204,7 @@ void facePrintMiddle(const std::string &text, bool clear, uint8_t font_size) {
     size_t last_space = std::string::npos;
     while (end < len) {
       std::string sub = text.substr(start, end - start + 1);
-      w = u8g2.getUTF8Width(sub.c_str());
+      w = _display.getUTF8Width(sub.c_str());
       if (w > SCREEN_WIDTH) break;
       if (text[end] == ' ') last_space = end;
       if (text[end] == '\n') { // Handle explicit newlines
@@ -224,18 +224,18 @@ void facePrintMiddle(const std::string &text, bool clear, uint8_t font_size) {
     start = end;
   }
 
-  int line_height = u8g2.getMaxCharHeight() + 2;
+  int line_height = _display.getMaxCharHeight() + 2;
   int total_text_height = line_height * lines.size();
   int y = (SCREEN_HEIGHT - total_text_height) / 2 + line_height; // Center block vertically
 
   for (const auto& line : lines) {
-    int line_width = u8g2.getUTF8Width(line.c_str());
+    int line_width = _display.getUTF8Width(line.c_str());
     int x = (SCREEN_WIDTH - line_width) / 2; // Center each line horizontally
-    u8g2.drawUTF8(x, y, line.c_str());
+    _display.drawUTF8(x, y, line.c_str());
     y += line_height;
     if (y > SCREEN_HEIGHT) break;
   }
-  u8g2.sendBuffer(); // Update display
+  _display.sendBuffer(); // Update display
 }
 
 void facePrintMiddle(const int number, bool clear, uint8_t font_size) {
@@ -255,7 +255,7 @@ void facePrintMiddle(const char message, bool clear, uint8_t font_size) {
  */
 void display_clearDisplay() {
   if (!u8g2_initialized) return;
-  u8g2.clearBuffer();
+  _display.clearBuffer();
 }
 /**
  * @brief Draws a filled rounded rectangle at (x, y) with width w, height h, corner radius r, and color.
@@ -263,7 +263,7 @@ void display_clearDisplay() {
  */
 void display_fillRoundRect(int x, int y, int w, int h, int r, int color) {
   if (!u8g2_initialized) return;
-  u8g2.setDrawColor(color);
+  _display.setDrawColor(color);
   // behavior is not defined if r is smaller than the height or width
   if (w < 2 * (r + 1)) {
     r = (w / 2) - 1;
@@ -272,7 +272,7 @@ void display_fillRoundRect(int x, int y, int w, int h, int r, int color) {
     r = (h / 2) - 1;
   }
   // check if height and width are valid when calling drawRBox
-  u8g2.drawRBox(x, y, w < 1 ? 1 : w, h < 1 ? 1 : h, r);
+  _display.drawRBox(x, y, w < 1 ? 1 : w, h < 1 ? 1 : h, r);
 }
 
 /**
@@ -280,7 +280,7 @@ void display_fillRoundRect(int x, int y, int w, int h, int r, int color) {
  */
 void display_display() {
   if (!u8g2_initialized) return;
-  u8g2.sendBuffer();
+  _display.sendBuffer();
 }
 
 
@@ -289,8 +289,8 @@ void display_display() {
  */
 void display_fillTriangle(int x0, int y0, int x1, int y1, int x2, int y2, int color) {
   if (!u8g2_initialized) return;
-  u8g2.setDrawColor(color);
-  u8g2.drawTriangle(x0, y0, x1, y1, x2, y2);
+  _display.setDrawColor(color);
+  _display.drawTriangle(x0, y0, x1, y1, x2, y2);
 }
 
 
@@ -402,20 +402,20 @@ void eyes_wakeup() {
  * @brief Draws a "happy" eye expression by overlaying triangles on the lower part of the eyes.
  */
 void eyes_happy() {
-  eyes_reset(false);
+  // eyes_reset(false);
   //draw inverted triangle over eye lower part
   int offset = ref_eye_height / 2;
   for (int i = 0; i < 10; i++) {
     display_fillTriangle(left_eye_x - left_eye_width / 2 - 1, left_eye_y + offset, left_eye_x + left_eye_width / 2 + 1, left_eye_y + 5 + offset, left_eye_x - left_eye_width / 2 - 1, left_eye_y + left_eye_height + offset, COLOR_BLACK);
     display_fillTriangle(right_eye_x + right_eye_width / 2 + 1, right_eye_y + offset, right_eye_x - left_eye_width / 2 - 2, right_eye_y + 5 + offset, right_eye_x + right_eye_width / 2 + 1, right_eye_y + right_eye_height + offset, COLOR_BLACK);
     offset -= 2;
-    display_display();
+    // display_display();
     delay(1);
   }
 
 
   display_display();
-  delay(1000);
+  // delay(1000);
 }
 
 /**
@@ -424,12 +424,13 @@ void eyes_happy() {
  * @param direction_y Vertical direction: -1 (up), 1 (down), 0 (none).
  */
 void eyes_saccade(int direction_x, int direction_y) {
+  eyes_reset(false); //Reset dimentions but dont update
   //quick movement of the eye, no size change. stay at position after movement, will not move back,  call again with opposite direction
   //direction == -1 :  move left
   //direction == 1 :  move right
 
-  int direction_x_movement_amplitude = 8;
-  int direction_y_movement_amplitude = 6;
+  int direction_x_movement_amplitude = 5;
+  int direction_y_movement_amplitude = 5;
   int blink_amplitude = 8;
 
   for (int i = 0; i < 1; i++) {
@@ -441,7 +442,6 @@ void eyes_saccade(int direction_x, int direction_y) {
     right_eye_height -= blink_amplitude;
     left_eye_height -= blink_amplitude;
   draw_eyes(true);
-    delay(1);
   }
 
   for (int i = 0; i < 1; i++) {
@@ -454,30 +454,30 @@ void eyes_saccade(int direction_x, int direction_y) {
     left_eye_height += blink_amplitude;
 
   draw_eyes(true);
-    delay(1);
   }
+  eyes_reset(false); //Reset dimentions but dont update
 }
 
 /**
  * @brief Moves the eyes in a big movement to the right.
  */
 void eyes_move_right_big() {
-  eyes_move_big(1);
+  eyes_move_big(-1);
 }
 /**
  * @brief Moves the eyes in a big movement to the left.
  */
 void eyes_move_left_big() {
-  eyes_move_big(-1);
+  eyes_move_big(1);
 }
 /**
  * @brief Moves the eyes in a big movement in the specified direction, with size and blink animation.
- * @param direction -1 for left, 1 for right.
+ * @param direction -1 for right, 1 for left.
  */
 void eyes_move_big(int direction) {
-  //direction == -1 :  move left
-  //direction == 1 :  move right
-
+  //direction == -1 :  move right
+  //direction == 1 :  move left
+  eyes_reset(false); //Reset dimentions but dont update
   int direction_oversize = 1;
   int direction_movement_amplitude = 2;
   int blink_amplitude = 5;
@@ -494,10 +494,9 @@ void eyes_move_big(int direction) {
       left_eye_height += direction_oversize;
       left_eye_width += direction_oversize;
     }
-
   draw_eyes(true);
-    delay(1);
   }
+
   for (int i = 0; i < 3; i++) {
     left_eye_x += direction_movement_amplitude * direction;
     right_eye_x += direction_movement_amplitude * direction;
@@ -511,42 +510,8 @@ void eyes_move_big(int direction) {
       left_eye_width += direction_oversize;
     }
   draw_eyes(true);
-    delay(1);
   }
-
-  delay(1000);
-
-  for (int i = 0; i < 3; i++) {
-    left_eye_x -= direction_movement_amplitude * direction;
-    right_eye_x -= direction_movement_amplitude * direction;
-    right_eye_height -= blink_amplitude;
-    left_eye_height -= blink_amplitude;
-    if (direction > 0) {
-      right_eye_height -= direction_oversize;
-      right_eye_width -= direction_oversize;
-    } else {
-      left_eye_height -= direction_oversize;
-      left_eye_width -= direction_oversize;
-    }
-  draw_eyes(true);
-    delay(1);
-  }
-  for (int i = 0; i < 3; i++) {
-    left_eye_x -= direction_movement_amplitude * direction;
-    right_eye_x -= direction_movement_amplitude * direction;
-    right_eye_height += blink_amplitude;
-    left_eye_height += blink_amplitude;
-    if (direction > 0) {
-      right_eye_height -= direction_oversize;
-      right_eye_width -= direction_oversize;
-    } else {
-      left_eye_height -= direction_oversize;
-      left_eye_width -= direction_oversize;
-    }
-  draw_eyes(true);
-    delay(1);
-  }
-  eyes_reset(true);
+  eyes_reset(false); //Reset dimentions but dont update
 }
 
 
@@ -639,66 +604,15 @@ void testFaceEmoji() {
 /**
  * @brief Initializes the face emoji system, display, and starts the animation task.
  */
-void initialize_face() {
+void initialize_face(U8G2 display) {
   //initialize the u8g2 lib.
-  u8g2.begin();
+  _display = display;
   u8g2_initialized = true;
 
   //clear screen and display startup info.
   display_OFF();
   setFaceEmoji(NORMAL);
   //DisplayPage(FACE);
-}
-
-void PAGE_FaceEmojiTask(void *parameter){
-  while(CURRENT_PAGE == FACE){
-    switch(CURRENT_FACE_EMOJI){
-      case WAKEUP:
-        launch_animation_with_index(0);
-        CURRENT_FACE_EMOJI = NORMAL; 
-        break;
-      case RESET:
-        launch_animation_with_index(1);
-        CURRENT_FACE_EMOJI = NORMAL; 
-        break;
-      case LOOK_RIGHT_BIG:
-        launch_animation_with_index(3);
-        CURRENT_FACE_EMOJI = NORMAL; 
-        break;
-      case LOOK_LEFT_BIG:
-        launch_animation_with_index(2);
-        CURRENT_FACE_EMOJI = NORMAL; 
-        break;
-      case BLINK_LONG:
-        launch_animation_with_index(4);
-        CURRENT_FACE_EMOJI = NORMAL; 
-        break;
-      case BLINK_SHORT:
-        launch_animation_with_index(5);
-        CURRENT_FACE_EMOJI = NORMAL; 
-        break;
-      case HAPPY:
-        launch_animation_with_index(6);
-        break;
-      case SLEEPY:
-        launch_animation_with_index(7);
-        break;
-      case IDLE_SACCADE:
-        launch_animation_with_index(8);
-        break;
-      case NORMAL:
-        if (random(0, 1000) > 950) {
-          launch_animation_with_index(5); // Occasional short blink
-        } else {
-          launch_animation_with_index(8); // Default to reset (normal) position
-        }
-        break;
-      default:
-        break;
-    }
-  vTaskDelay(50 / portTICK_PERIOD_MS); // Sleep briefly to avoid busy loop
-  }
-  vTaskDelete(NULL); // Delete Task 
 }
 
 
@@ -722,17 +636,17 @@ void drawClock(struct tm* t) {
   char dateShort[12];  // e.g., "23/09"
   strftime(dateShort, sizeof(dateShort), "%d/%m", t);
 
-  u8g2.clearBuffer();
+  _display.clearBuffer();
 
   // --- Seconds (top-right) ---
-  u8g2.setFont(u8g2_font_7x13B_tf);
-  int sec_w = u8g2.getUTF8Width(secStr);
-  u8g2.drawUTF8(57, 12, secStr);
+  _display.setFont(u8g2_font_7x13B_tf);
+  int sec_w = _display.getUTF8Width(secStr);
+  _display.drawUTF8(57, 12, secStr);
 
   // --- Big time (center) ---
-  u8g2.setFont(u8g2_font_logisoso42_tn);
-  int time_w = u8g2.getUTF8Width(timeStr);
-  u8g2.drawUTF8((128 - time_w) / 2, 50, timeStr);
+  _display.setFont(u8g2_font_logisoso42_tn);
+  int time_w = _display.getUTF8Width(timeStr);
+  _display.drawUTF8((128 - time_w) / 2, 50, timeStr);
 
   // --- Date (bottom centered) with auto-fit ---
   // Try 6x12, then 5x8; if still too wide, use short date.
@@ -740,138 +654,28 @@ void drawClock(struct tm* t) {
   const char* textToDraw = dateLong;
 
   // Try 6x12
-  u8g2.setFont(u8g2_font_6x12_tf);
-  int w = u8g2.getUTF8Width(textToDraw);
+  _display.setFont(u8g2_font_6x12_tf);
+  int w = _display.getUTF8Width(textToDraw);
 
   if (w > maxW) {
     // Try smaller font with long date
-    u8g2.setFont(u8g2_font_5x8_tf);
-    w = u8g2.getUTF8Width(textToDraw);
+    _display.setFont(u8g2_font_5x8_tf);
+    w = _display.getUTF8Width(textToDraw);
 
     if (w > maxW) {
       // Use short date with the small font
       textToDraw = dateShort;
-      w = u8g2.getUTF8Width(textToDraw);
+      w = _display.getUTF8Width(textToDraw);
     }
   }
 
   // Draw date at the very bottom (baseline at y=63 fits safely on 0..63)
   int x = (128 - w) / 2;
-  u8g2.drawUTF8(x, 60, textToDraw);
+  _display.drawUTF8(x, 60, textToDraw);
 
-  u8g2.sendBuffer();
+  _display.sendBuffer();
 }
 
-
-
-void PAGE_LeftTask(void *parameter){
-  // if (LeftPageLoop == NULL){
-  //   LeftPageLoop();
-  // }else{
-  
-  // }
-   // Timezone offset (e.g., +2h = 7200)
-  const long gmtOffset_sec = 7200;
-  const int daylightOffset_sec = 0;
-      
-
-  configTime(gmtOffset_sec, daylightOffset_sec, "pool.ntp.org");
-
-  
-  while(CURRENT_PAGE == LEFTPAGE){
-    //LeftPageSetup();
-    
-    time_t now = time(nullptr);
-    struct tm t;
-    localtime_r(&now, &t);
-    drawClock(&t);
-
-    vTaskDelay(500 / portTICK_PERIOD_MS); // Sleep briefly to avoid busy loop
-  }
-  vTaskDelete(NULL);
-}
-
-#include "chiko_icons.h"
-void PAGE_RightTask(void *parameter){
-  //RightPageLoop();
-  //DisplayUI ui(u8g2, "ESP32-Omer");
-  display_clearDisplay();
-  while(CURRENT_PAGE == RIGHTPAGE){
-    //RightPageSetup();
-    // ui.updateDisplay();
-    u8g2.drawBitmap(0, 0, ICON_W/8, ICON_H, pickBatteryIcon(75,HIGH));  // ICON_W/8 == 2
-    u8g2.drawBitmap(16, 0, ICON_W/8, ICON_H, icon_bluetooth_connected);
-    u8g2.drawBitmap(32, 0, ICON_W/8, ICON_H, icon_wifi_nc);
-    u8g2.drawBitmap(48, 0, ICON_W/8, ICON_H, icon_wifi_100);
-    // drawBatteryIcon(u8g2,8,8,3,1);
-    display_display();
-    vTaskDelay(50 / portTICK_PERIOD_MS); // Sleep briefly to avoid busy loop
-  }
-  vTaskDelete(NULL);
-}
-
-void DisplayPage(Page PageToDisplay){
-  CURRENT_PAGE = PageToDisplay;
-  switch (CURRENT_PAGE)
-  {
-  case LEFTPAGE:
-    // Initialize Face Emoji Task
-    xTaskCreatePinnedToCore(
-      PAGE_LeftTask,   // Function to implement the task
-      "LeftPageTask",  // Name of the task
-      10000,           // Stack size in words
-      NULL,            // Task input parameter
-      2,               // Priority of the task
-      NULL,            // Task handle
-      1);              // Core where the task should run
-    break;
-  case FACE:
-    // Initialize Face Emoji Task
-    xTaskCreatePinnedToCore(
-      PAGE_FaceEmojiTask, // Function to implement the task
-      "FaceEmojiTask",    // Name of the task
-      10000,              // Stack size in words
-      NULL,               // Task input parameter
-      2,                  // Priority of the task
-      NULL,               // Task handle
-      1);                 // Core where the task should run
-    break;
-  case RIGHTPAGE:
-    // Initialize Face Emoji Task
-    xTaskCreatePinnedToCore(
-      PAGE_RightTask,  // Function to implement the task
-      "RightPageTask", // Name of the task
-      10000,           // Stack size in words
-      NULL,            // Task input parameter
-      2,               // Priority of the task
-      NULL,            // Task handle
-      1);              // Core where the task should run
-    break;
-  case OFF:
-      display_OFF();
-      break;
-  default:
-      Serial.println("Page Not found!");
-    break;
-  }
-}
-
-void AttachPageTasks(Page TargetPage, void (*setup)(),void (*loop)()){
-  switch (TargetPage)
-  {
-  case LEFTPAGE:
-    LeftPageLoop = loop;
-    LeftPageSetup = setup;
-    break;
-  case RIGHTPAGE:
-    RightPageLoop = loop;
-    RightPageSetup = setup;
-    break;
-  default:
-    Serial.println("Page not found: No task assigned!");
-    break;
-  }
-}
 
 void display_OFF(void){
    display_clearDisplay();
@@ -880,6 +684,7 @@ void display_OFF(void){
 
 void setFaceEmoji(FaceEmoji TargetFaceEmoji){
   CURRENT_FACE_EMOJI = TargetFaceEmoji;
+  display_display();
 }
 
 
