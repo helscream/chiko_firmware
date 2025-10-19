@@ -35,7 +35,9 @@ void eyesUpdateTask(void *param) {
   initialize_face(page->getDisplayHandel());
   while (page->getSelectedPageNumber() == FACE_PN) {
     
-    if (digitalRead(POWER_BUTTON_PIN) || !digitalRead(FUNCTION_BUTTON_PIN)){
+    if (page->getEyesScanDirection() == SLEEPING){
+      eyes_sleep();
+    }else if (digitalRead(POWER_BUTTON_PIN) || !digitalRead(FUNCTION_BUTTON_PIN)){
       eyes_happy();
     }else if(page->getEyesScanDirection() == LOOK_LEFT){
       eyes_move_left_big();
@@ -55,7 +57,7 @@ void eyesUpdateTask(void *param) {
       page->setEyesScanDirection(LOOK_STRIGHT);
     }else if(random(1, 100) > 97){
       eyes_blink(12);
-    }else{
+    }else {
       eyes_reset(true);
     }
     delay(100);         // Delay for 10 milliseconds to control update rate
@@ -200,7 +202,7 @@ void pages::gotoPageNumber(uint8_t pageNumber) {
     _currentPage = pageNumber; // Set the current page to the specified number
     chikoLog(LOG_TAG, "Navigated to page number: %d", _currentPage);
   } else {
-    _currentPage = 0; // Default to the first page if the number is out of bounds
+    _currentPage = FACE_PN; // Default to the first page if the number is out of bounds
     chikoLog(LOG_TAG, "Invalid page number %d, defaulting to page 0.", pageNumber);
   }
   updatePage();
@@ -210,7 +212,7 @@ void pages::gotoPageNumber(uint8_t pageNumber) {
  * @brief Navigates to the default page, which is typically the first page (index 0).
  */
 void pages::gotoDefaultPage() {
-  _currentPage = 0; // Set the current page to the first page
+  _currentPage = FACE_PN; // Set the current page to the first page
   updatePage();
   chikoLog(LOG_TAG, "Navigated to default page: %d", _currentPage);
 }

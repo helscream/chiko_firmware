@@ -13,8 +13,7 @@
 #include <chiko_face.h>
 #include <stdint.h>
 #include <stddef.h>
-#include <chiko_wifi.h>
-#include <BluetoothSerial.h>
+
 
 
 class pages {

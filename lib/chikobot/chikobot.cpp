@@ -34,7 +34,6 @@ void goToLightSleep() {
   esp_sleep_enable_ext0_wakeup((gpio_num_t)POWER_BUTTON_PIN, HIGH); // 1 = wake on HIGH
   esp_light_sleep_start();
   chikoLog(LOG_TAG,"Woke up from light sleep.");
-  // setFaceEmoji(NORMAL);
 }
 
 void PowerButtonPressTask(void* parameter) {
@@ -42,14 +41,14 @@ void PowerButtonPressTask(void* parameter) {
   unsigned long buttonLowStart = millis();
   while (digitalRead(POWER_BUTTON_PIN) == HIGH) {
       if (millis() - buttonLowStart >= HOLD_TIME_MS) {
+        ChikoPages.setEyesScanDirection(SLEEPING);
         chikoLog(LOG_TAG,"Ready to sleep ... You can release the button.");
-        // setFaceEmoji(SLEEPY);
         while(digitalRead(POWER_BUTTON_PIN) == HIGH) {
           // Wait for button release to avoid immediate wake-up
           delay(100);
         }
         chikoLog(LOG_TAG,"ZZZzzzz...!");
-        // DisplayPage(OFF);
+        ChikoPages.getDisplayHandel().setPowerSave(true);
         goToDeepSleep();
       }
       delay(10); // Before deleting task, give time for face emoji to update
@@ -80,23 +79,6 @@ void IRAM_ATTR handleButtonInterrupt() {
 
 
 void FunctionButtonTask(void* parameter) {
-  // If function button is held LOW, check how long
-  // unsigned long buttonLowStart = millis();
-  // while (true) {
-  //   if (digitalRead(FUNCTION_BUTTON_PIN) == LOW) {
-  //     Serial.println("Function button pressed.");
-  //     if(areJointsActive()){
-  //       Serial.println("Disabling joints.");
-  //       disable_joints();
-  //     } else {
-  //       Serial.println("Enabling joints.");
-  //       enable_joints();
-  //     }
-  //   } else {
-  //     vTaskDelete(NULL); // Delete this task when button is released
-  //   }
-  //   delay(1000); // Polling delay
-  // }
   ChikoPages.btnFunctionAction();
   vTaskDelete(NULL);
 }
@@ -126,23 +108,6 @@ void IRAM_ATTR handleFunctionButtonInterrupt() {
 
 
 
-
-
-// void showInfoOnFace(){
-//   display_clearDisplay();
-//   facePrint("ChikoBot v1.0", 0, 0);
-//   facePrint("www.chikodroid.com", 0, 10);
-//   facePrint("", 0, 20);
-//   facePrint("IP: 192.168.3.2", 0, 30);
-//   float voltage = readBatteryVoltage();
-  
-//   facePrint("4.3 V", 0, 40);
-// } 
-
-void test(){
-  chikoLog(LOG_TAG,"Function button action");
-}
-
 void initilize_chikobot(void){
   Serial.begin(115200);
   chikoLog(LOG_TAG,"Chiko Here!");
@@ -160,17 +125,18 @@ void initilize_chikobot(void){
   // Setup charge indicator pin
   pinMode(CHARGE_INDICATOR_PIN, INPUT_PULLUP);
   
-  initilize_LED();
-  initilize_batteryMonitor();
+  
   
   initialize_joints(&LeftLeg, &RightLeg, &LeftFoot, &RightFoot);
     chikoLog(LOG_TAG,"Joints Initialized.");
 
-    u8g2.begin();
+  u8g2.begin();
     
-    ChikoPages.intilize(u8g2);
-    ChikoPages.updatePage();
-    
+  ChikoPages.intilize(u8g2);
+  ChikoPages.updatePage();
+  ChikoPages.getDisplayHandel();
+  initilize_LED();
+  initilize_batteryMonitor(&ChikoPages);
 
     accelrometer.initialize();
     
@@ -210,26 +176,11 @@ void initilize_chikobot(void){
       ChikoPages.gotoPreviousPage();
     });
 
-    
+    initialize_Wifi(&ChikoPages); 
+    Serial.println("WiFi Initialized.");
 
     chikoLog(LOG_TAG,"ChikoBot Initializtion completed!");
 
-    /*
-
-    initialize_Wifi(); 
-    Serial.println("WiFi Initialized.");
-
-    initialize_joints(&LeftLeg, &RightLeg, &LeftFoot, &RightFoot);
-    Serial.println("Joints Initialized.");
-    
-    Serial.println("Joints and Accelerometer Initialized.");
-
-    initialize_face();
-    Serial.println("Face Initialized.");
-    
-    
-
-    */
 }
 
 

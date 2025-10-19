@@ -29,7 +29,7 @@ void pages::jointCalibrationPage_setup (uint8_t PN){
     
   strcpy(_pageConfigs[PN].btnFunName, "-");
   strcpy(_pageConfigs[PN].btnPwName, "+");
-  _pageConfigs[PN].taskBarVisibility = false;
+  _pageConfigs[PN].taskBarVisibility = true;
   _pageConfigs[PN].btnFunVisibility = true;
   _pageConfigs[PN].btnPwVisibility = true;
   _pageConfigs[PN].btnRstVisibility = true;
@@ -45,26 +45,26 @@ void pages::jointCalibrationPage_setup (uint8_t PN){
 
 
 void pages::jointCalibrationPage_update (uint8_t PN){
-    _title.create(_display,"Joint Calibration",MIDTOP,64,2);
-    _textField.create(_display,24,"Offset: ","0");
+    _title.create(_display,"Joint Calibration",MIDTOP,64,14);
+    _textField.create(_display,36,"Offset: ","0");
     _textField.setOuterPadding(10,5,false);
     SelectedJoint SJ = NONE_SELECTED;
     switch (PN)
     {
     case LEFTLEG_CALIB_PN:
         SJ = LEFTLEG;
-        _title.create(_display,"Left Leg Joint:",LEFTTOP,10,14);
+        _title.create(_display,"Left Leg Joint:",LEFTTOP,10,26);
         break;
     case LEFTFOOT_CALIB_PN:
-        _title.create(_display,"Left Foot Joint:",LEFTTOP,10,14);
+        _title.create(_display,"Left Foot Joint:",LEFTTOP,10,26);
         SJ = LEFTFOOT;
         break;
     case RIGHTLEG_CALIB_PN:
-        _title.create(_display,"Right Leg Joint:",LEFTTOP,10,14);
+        _title.create(_display,"Right Leg Joint:",LEFTTOP,10,26);
         SJ = RIGHTLEG;
         break;
     case RIGHTFOOT_CALIB_PN:
-        _title.create(_display,"Right Foot Joint:",LEFTTOP,10,14);
+        _title.create(_display,"Right Foot Joint:",LEFTTOP,10,26);
         SJ = RIGHTFOOT;
         break;
     default:
@@ -86,13 +86,11 @@ void pages::pageSetup(){
 
   // Joint Page configuration
   if(areJointsActive()){
-        disable_joints();
         strcpy(_pageConfigs[JOINT_ENABLE_PN].btnFunName, "Enable");
     }else{
-        enable_joints();
         strcpy(_pageConfigs[JOINT_ENABLE_PN].btnFunName, "Disable");
     }
-  _pageConfigs[JOINT_ENABLE_PN].taskBarVisibility = false;
+  _pageConfigs[JOINT_ENABLE_PN].taskBarVisibility = true;
   _pageConfigs[JOINT_ENABLE_PN].btnFunVisibility = true;
   _pageConfigs[JOINT_ENABLE_PN].btnPwVisibility = false;
   _pageConfigs[JOINT_ENABLE_PN].btnRstVisibility = true;
@@ -112,20 +110,19 @@ void pages::pageSetup(){
   jointCalibrationPage_setup(LEFTFOOT_CALIB_PN);
   jointCalibrationPage_setup(RIGHTLEG_CALIB_PN);
   jointCalibrationPage_setup(RIGHTFOOT_CALIB_PN);
-//   strcpy(_pageConfigs[LEFTLEFT_CALIB_PN].btnFunName, "-");
-//   strcpy(_pageConfigs[LEFTLEFT_CALIB_PN].btnPwName, "+");
-//   _pageConfigs[LEFTLEFT_CALIB_PN].taskBarVisibility = false;
-//   _pageConfigs[LEFTLEFT_CALIB_PN].btnFunVisibility = true;
-//   _pageConfigs[LEFTLEFT_CALIB_PN].btnPwVisibility = true;
-//   _pageConfigs[LEFTLEFT_CALIB_PN].btnRstVisibility = true;
-//   _pageConfigs[LEFTLEFT_CALIB_PN].btnFunClickAction = [this]() {
-//             setJointOffset(LEFTLEG,getJointOffset(LEFTLEG)+1);
-//             updatePage(true);
-//         };
-//   _pageConfigs[LEFTLEFT_CALIB_PN].btnPwClickAction = [this]() {
-//             setJointOffset(LEFTLEG,getJointOffset(LEFTLEG)-1);
-//             updatePage(true);
-//         };
+
+  // Battery Infomation page setup
+  _pageConfigs[BATTERY_INFO_PN].taskBarVisibility = true;
+  _pageConfigs[BATTERY_INFO_PN].btnFunVisibility = false;
+  _pageConfigs[BATTERY_INFO_PN].btnPwVisibility = false;
+  _pageConfigs[BATTERY_INFO_PN].btnRstVisibility = false;
+
+  // WiFi Infomation page setup
+  _pageConfigs[WIFI_INFO_PN].taskBarVisibility = true;
+  _pageConfigs[WIFI_INFO_PN].btnFunVisibility = true;
+  _pageConfigs[WIFI_INFO_PN].btnPwVisibility = false;
+  _pageConfigs[WIFI_INFO_PN].btnRstVisibility = true;
+  
 }
 
 
@@ -142,14 +139,15 @@ void pages::printPageInfo(){
   case RIGHTLEG_CALIB_PN:
   case RIGHTFOOT_CALIB_PN:
     jointCalibrationPage_update(_currentPage);
-    // _title.create(_display,"Joint Calibration",MIDTOP,64,2);
-    // _title.create(_display,"Left Leg Joint:",LEFTTOP,10,14);
-    // _textField.create(_display,24,"Offset: ","0");
-    // _textField.setOuterPadding(10,5,false);
-    // char temp[8];
-    // sprintf(temp,"%d deg",(int)getJointOffset(LEFTLEG));
-    // _textField.setText(temp,true); 
-    // _title.update();
+    break;
+  case BATTERY_INFO_PN:
+    break;
+
+  case WIFI_INFO_PN:
+    break;
+  case BLUETOOTH_INFO_PN:
+    break;
+  case ALARM_INFO_PN:
     break;
   default:
     break;

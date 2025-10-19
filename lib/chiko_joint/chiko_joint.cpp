@@ -178,19 +178,21 @@ void initialize_joints(Joint *LeftFootJoint, Joint *LeftLegJoint, Joint *RightFo
   LFJ = LeftFootJoint;
   RLJ = RightLegJoint;
   RFJ = RightFootJoint;
+  
+  loadJointsOffsets();
 
-  LFJ->init_joint(LEFTFOOT_PIN, 100, LF_OFFSET);
+  LFJ->init_joint(LEFTFOOT_PIN, 100, LFJ->JointOffset);
   LFJ->setToZero();
   delay(100);
-  LLJ->init_joint(LEFTLEG_PIN, 100, LL_OFFSET);
+  LLJ->init_joint(LEFTLEG_PIN, 100, LLJ->JointOffset);
   LLJ->setToZero();
   delay(100);
-  RFJ->init_joint(RIGHTFOOT_PIN, 100, RF_OFFSET);
+  RFJ->init_joint(RIGHTFOOT_PIN, 100, RFJ->JointOffset);
   RFJ->setToZero();
   delay(100);
-  RLJ->init_joint(RIGHTLEG_PIN, 100, RL_OFFSET);
+  RLJ->init_joint(RIGHTLEG_PIN, 100, RLJ->JointOffset);
   RLJ->setToZero();
-  loadJointsOffsets();
+  
 }
 
 void waitTillAllJointsAvailable(void){
