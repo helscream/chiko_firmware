@@ -9,7 +9,7 @@ const char LOG_TAG[] = "CHIKO";
 // Each Joint object represents a servo or actuator controlling a limb segment.
 Joint LeftLeg, RightLeg, LeftFoot, RightFoot;
 // Accelerometer object for gesture detection (double-tap events)
-BMA250 accelrometer;
+BMA250 accelerometer;
 // Action object for walking routine.
 // Encapsulates the walking state machine (enter, loop, exit routines)
 
@@ -138,9 +138,9 @@ void initilize_chikobot(void){
   initilize_LED();
   initilize_batteryMonitor(&ChikoPages);
 
-    accelrometer.initialize();
+    accelerometer.initialize();
     
-    accelrometer.attachDoubleTapToAction(TOP, [](){
+    accelerometer.attachDoubleTapToAction(TOP, [](){
       chikoLog(LOG_TAG,"Top face double-tapped.");
       if (ChikoPages.getSelectedPageNumber() == 0){
         ChikoPages.setEyesScanDirection(LOOK_UP);
@@ -149,7 +149,7 @@ void initilize_chikobot(void){
       ChikoPages.gotoDefaultPage();
     });
 
-    accelrometer.attachDoubleTapToAction(BOTTOM, [](){
+    accelerometer.attachDoubleTapToAction(BOTTOM, [](){
       chikoLog(LOG_TAG,"Top face double-tapped.");
       if (ChikoPages.getSelectedPageNumber() == 0){
         ChikoPages.setEyesScanDirection(LOOK_DOWN);
@@ -158,7 +158,7 @@ void initilize_chikobot(void){
       ChikoPages.gotoDefaultPage();
     });
 
-    accelrometer.attachDoubleTapToAction(LEFT, [](){
+    accelerometer.attachDoubleTapToAction(LEFT, [](){
       chikoLog(LOG_TAG,"Left face double-tapped.");
       if (ChikoPages.getSelectedPageNumber() == 0){
         ChikoPages.setEyesScanDirection(LOOK_LEFT);
@@ -167,7 +167,7 @@ void initilize_chikobot(void){
       ChikoPages.gotoNextPage();
     });
 
-    accelrometer.attachDoubleTapToAction(RIGHT, [](){
+    accelerometer.attachDoubleTapToAction(RIGHT, [](){
       chikoLog(LOG_TAG,"Right face double-tapped.");
       if (ChikoPages.getSelectedPageNumber() == 0){
         ChikoPages.setEyesScanDirection(LOOK_RIGHT);
@@ -177,9 +177,12 @@ void initilize_chikobot(void){
     });
 
     initialize_Wifi(&ChikoPages); 
-    Serial.println("WiFi Initialized.");
+    chikoLog(LOG_TAG,"WiFi Initialized.");
 
-    chikoLog(LOG_TAG,"ChikoBot Initializtion completed!");
+    delay(1000);
+    initialize_SystemClock(&ChikoPages);
+
+    chikoLog(LOG_TAG,"ChikoBot Initialization completed!");
 
 }
 

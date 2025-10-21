@@ -47,6 +47,9 @@ const char wifi_PASS[] = "1234567890";
 #define RIGHTFOOT_CALIB_PN      LEFTLEG_CALIB_PN+3
 
 
+#define GMT_OFFSET_SEC          3600L // +1h
+#define DAY_LIGHT_OFFSET_SEC    3600 // One hour
+
 
 enum UIorigin{
     LEFTTOP,

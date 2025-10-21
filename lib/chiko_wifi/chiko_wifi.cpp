@@ -4,8 +4,6 @@ TaskHandle_t wifiConnectionTaskHandle;
 
 const char LOG_TAG[] = "WIFI";
 
-
-
 void WifiInfoPageTask(void *param){
   pages *_pages;
   _pages = (pages*)param;
@@ -64,8 +62,6 @@ void WifiInfoPageTask(void *param){
         sprintf(buff,"IP: Not avaliable!");
       }
       wifiIP.create(_display,buff,LEFTTOP,4,38);
-      
-      
       _display.sendBuffer();
     delay(500);
   } 
@@ -106,16 +102,9 @@ void WifiConnectionTask(void* parameter) {
     delay(5000);
   }
     chikoLog(LOG_TAG,"Connected to the internet!");
-    struct tm timeinfo;
-    // Set your timezone offset and daylight offset as needed
-    long gmtOffset_sec = 0; // Example: 0 for UTC
-    int daylightOffset_sec = 0; // Example: 0 if no daylight saving
-    if(getTimeFromNTP(&timeinfo, gmtOffset_sec, daylightOffset_sec)) {
-      chikoLog(LOG_TAG,"Time synchronized from NTP server:");
-      Serial.print(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-    } else {
-      chikoLog(LOG_TAG,"Failed to synchronize time from NTP server.");
-    }
+    
+    
+    
   while (1) {
     delay(60000); // Check connection every 60 seconds
     if (WiFi.status() != WL_CONNECTED) {

@@ -61,14 +61,16 @@ void batteryMonitorTask(void* parameter) {
       // Optionally, you could add code here to put the robot into a low-power state
     }
     if (_pages->getSelectedPageNumber() == BATTERY_INFO_PN){
-        uint8_t _x = 15, _y = 15, _h = 33, _w = 76, _r = 6;
+        uint8_t _x = 15, _y = 15, _h = 33, _w = 76, _r = 6, _m = 3;
         U8G2 _display = _pages->getDisplayHandel();
         _display.setDrawColor(0);
         _display.drawBox(0,_y,_display.getWidth(),_h);
         _display.setDrawColor(1);
-        _display.drawRFrame(_x, _y, _w, _h, _r);
+        
+        _display.drawBox(_x + _m, _y + _m, round((_w - _m*2)*getBatteryPercentage()/100), _h - _m*2);
+        _display.drawFrame(_x, _y, _w, _h);
         _display.drawRBox(_x+_w-1, 24, 7, 15, 2);
-        _display.drawRBox(_x, _y, round(_w*getBatteryPercentage()/100), _h, _r);
+        
         if (isCharging){
             _display.drawLine(_x + _w + 10, _y + 19, _x + _w + 20, _y + 4);
             _display.drawLine(_x + _w + 10, _y + 19, _x + _w + 17, _y + 18);

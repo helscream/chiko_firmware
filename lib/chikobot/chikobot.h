@@ -14,6 +14,7 @@
 #include <chiko_wifi.h>        // WiFi and networking utilities
 #include <chiko_displayUI.h>
 #include "chiko_LED.h"
+#include "chiko_clock.h"
 #include "chiko_battery.h"
 #include <U8g2lib.h>
 #include <esp_sleep.h>         // ESP32 deep sleep functionality

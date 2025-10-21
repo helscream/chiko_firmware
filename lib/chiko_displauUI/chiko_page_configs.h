@@ -122,6 +122,12 @@ void pages::pageSetup(){
   _pageConfigs[WIFI_INFO_PN].btnFunVisibility = true;
   _pageConfigs[WIFI_INFO_PN].btnPwVisibility = false;
   _pageConfigs[WIFI_INFO_PN].btnRstVisibility = true;
+
+  // System Clock page setup
+  _pageConfigs[CLOCK_PN].taskBarVisibility = true;
+  _pageConfigs[CLOCK_PN].btnFunVisibility = false;
+  _pageConfigs[CLOCK_PN].btnPwVisibility = false;
+  _pageConfigs[CLOCK_PN].btnRstVisibility = true;
   
 }
 
@@ -130,7 +136,7 @@ void pages::printPageInfo(){
   switch (_currentPage)
   {
   case JOINT_ENABLE_PN:
-    _jointCheckBox.create(_display,"Enable Joints",MIDDLE,64,20);
+    _jointCheckBox.create(_display,"Enable Joints",MIDDLE,64,25);
     _jointCheckBox.setChecked(areJointsActive()); // Check if Joints are active
     _jointCheckBox.update();
     break;
